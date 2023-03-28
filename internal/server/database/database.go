@@ -92,6 +92,42 @@ func (db *DB) GetUser(email string) (models.User, error) {
 	return user, nil
 }
 
+// FindCityByName provides a get city by name from database.
+func (db *DB) FindCityByName(cityName, countryCode string) (models.City, error) {
+	var city models.City
+	err := db.SQLX.Get(&city, `SELECT * FROM cities 
+		WHERE name = ?`, cityName)
+	if err == nil {
+		return city, nil
+	}
+
+	err = db.SQLX.Get(&city, `SELECT * FROM cities 
+		WHERE alternative_names LIKE ?`, "%"+cityName+",%")
+	if err != nil {
+		return city, err
+	}
+
+	return city, nil
+}
+
+// FindCityByNameAndCountryCode returns a city by name and country code.
+func (db *DB) FindCityByNameAndCountryCode(cityName, countryCode string) (models.City, error) {
+	var city models.City
+	err := db.SQLX.Get(&city, `SELECT * FROM cities 
+		WHERE name = ? AND country_code = ?`, cityName, countryCode)
+	if err == nil {
+		return city, nil
+	}
+
+	err = db.SQLX.Get(&city, `SELECT * FROM cities 
+		WHERE alternative_names LIKE ? AND country_code = ?`, "%"+cityName+",%", countryCode)
+	if err != nil {
+		return city, err
+	}
+
+	return city, nil
+}
+
 // checkTableExist checks if the table exists and returns
 // false if it does not exist.
 func (db *DB) checkTableExist(tableName string) bool {
