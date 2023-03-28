@@ -8,8 +8,8 @@ import (
 
 const chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-// GenRandKey performs a random key generation specified size.
-func GenRandKey(sizeKey int) string {
+// CreateUsingStrperforms a random key generation specified size.
+func CreateUsingStr(sizeKey int) string {
 	var (
 		key         string
 		restrictInt = int64(len(chars))
@@ -29,4 +29,16 @@ func GenRandKey(sizeKey int) string {
 
 		key += string(chars[n.Int64()])
 	}
+}
+
+// Create performs a random key generation specified size.
+func Create(sizeKey int) string {
+	key := make([]byte, sizeKey)
+
+	_, err := rand.Read(key)
+	if err != nil {
+		return chars[:sizeKey]
+	}
+
+	return string(key)
 }

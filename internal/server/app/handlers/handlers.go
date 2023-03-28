@@ -25,6 +25,7 @@ var (
 	MsgCreateUser = fmt.Sprintf("successfully registration")
 	MsgAuth       = fmt.Sprintf("successfully authentication")
 	MsgLogout     = fmt.Sprintf("successfully exiting")
+	MsgPing       = fmt.Sprintf("all systems work properly :-)")
 )
 
 // Hdls represents the handlers and includes db instance.
@@ -153,7 +154,20 @@ func (h *Hdls) CheckAuthentication(c *fiber.Ctx) error {
 		return h.errorAuth(c, ErrInvalidAuthentication)
 	}
 
+	if err := h.auth.CheckToken(token); err != nil {
+		return h.errorAuth(c, ErrInvalidAuthentication)
+	}
+
 	return c.Next()
+}
+
+func (h *Hdls) Ping(c *fiber.Ctx) error {
+	if err := h.db.SQLX.Ping(); err != nil {
+		err := fmt.Errorf("database is down: %v", err)
+		return h.errorBadRequest(c, err)
+	}
+
+	return h.sendOK(c, MsgPing)
 }
 
 // errorBadRequest performs send status code 400 and error.

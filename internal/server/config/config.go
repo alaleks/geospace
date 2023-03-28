@@ -95,9 +95,12 @@ func New(logger *zap.SugaredLogger) (*Cfg, error) {
 
 	// generate keys for encryption/decryption
 	cfg.Secure = Secure{
-		Key:       dongle.Encode.FromString(genkey.GenRandKey(sizeKeyCipher)).ByBase64().ToString(),
-		IV:        dongle.Encode.FromString(genkey.GenRandKey(sizeIVCipher)).ByBase64().ToString(),
-		SecretJWT: dongle.Encode.FromString(genkey.GenRandKey(sizeKeySecret)).ByBase64().ToString(),
+		Key: dongle.Encode.FromString(genkey.Create(sizeKeyCipher)).
+			ByBase64().ToString(),
+		IV: dongle.Encode.FromString(genkey.Create(sizeIVCipher)).
+			ByBase64().ToString(),
+		SecretJWT: dongle.Encode.FromString(genkey.Create(sizeKeySecret)).
+			ByBase64().ToString(),
 	}
 
 	// create config file

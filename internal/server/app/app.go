@@ -13,6 +13,7 @@ import (
 	"github.com/alaleks/geospace/internal/server/config"
 	"github.com/alaleks/geospace/internal/server/database"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -66,7 +67,10 @@ func (app *App) Run() {
 	// run goroutine for catch os signals for shutdown server.
 	go app.catchSign()
 
+	// Register routes
 	app.RegRouters()
+	// Use recovery from panic
+	app.srv.Use(recover.New())
 
 	err := app.srv.Listen(app.cfg.App.Port)
 	if err != nil {
@@ -76,6 +80,9 @@ func (app *App) Run() {
 
 // RegRouters install routes for the given application.
 func (app *App) RegRouters() {
+	// Ping server
+	app.srv.Get("/ping", app.hdls.Ping)
+	// v1
 	v1 := app.srv.Group("/v1")
 	// Registration for the using application.
 	v1.Post("/register", app.hdls.Register)

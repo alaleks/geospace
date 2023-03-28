@@ -14,7 +14,8 @@ import (
 )
 
 const (
-	Expiration = time.Second * 604800
+	// Expiration = time.Second * 604800
+	Expiration = time.Second * 3600
 )
 
 var (
