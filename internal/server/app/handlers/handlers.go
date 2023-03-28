@@ -9,15 +9,19 @@ import (
 
 	"github.com/alaleks/geospace/internal/server/app/authentication"
 	"github.com/alaleks/geospace/internal/server/database"
+	"github.com/alaleks/geospace/internal/server/database/models"
+	"github.com/alaleks/geospace/pkg/distance"
 	"github.com/gofiber/fiber/v2"
 )
 
 // typical errors
 var (
-	ErrMissingRequiredField  = errors.New("missing are no required field")
-	ErrUserNotExists         = errors.New("user with current email does not exist")
-	ErrInvalidPassword       = errors.New("password is invalid")
-	ErrInvalidAuthentication = errors.New("permission denied, user are not authorization")
+	ErrMissingRequiredField          = errors.New("missing are no required field")
+	ErrUserNotExists                 = errors.New("user with current email does not exist")
+	ErrInvalidPassword               = errors.New("password is invalid")
+	ErrInvalidAuthentication         = errors.New("permission denied, user are not authorization")
+	ErrEmptyDataForCalculateDisnance = errors.New("departure and destination cannot be empty")
+	ErrFindCity                      = errors.New("city in not found")
 )
 
 // messages
@@ -161,6 +165,55 @@ func (h *Hdls) CheckAuthentication(c *fiber.Ctx) error {
 	return c.Next()
 }
 
+// CalculateDistance performs a distance between two cities.
+func (h *Hdls) CalculateDistance(c *fiber.Ctx) error {
+	var (
+		departure   = c.Query("departure")
+		destination = c.Query("destination")
+		countryCode = c.Query("country_code")
+	)
+
+	if strings.TrimSpace(departure) == "" ||
+		strings.TrimSpace(destination) == "" {
+		return h.errorAuth(c, ErrEmptyDataForCalculateDisnance)
+	}
+
+	var (
+		cityDeparture   models.City
+		cityDestination models.City
+		err             error
+	)
+
+	if countryCode != "" {
+		cityDeparture, err = h.db.FindCityByNameAndCountryCode(departure, countryCode)
+	} else {
+		cityDeparture, err = h.db.FindCityByName(departure, countryCode)
+	}
+	if err != nil {
+		return h.errorBadRequest(c,
+			fmt.Errorf("%s : %v", departure, ErrFindCity))
+	}
+
+	if countryCode != "" {
+		cityDestination, err = h.db.FindCityByNameAndCountryCode(destination, countryCode)
+	} else {
+		cityDestination, err = h.db.FindCityByName(destination, countryCode)
+	}
+	if err != nil {
+		return h.errorBadRequest(c,
+			fmt.Errorf("%s : %v", destination, ErrFindCity))
+	}
+
+	dist := distance.CalcGreatCirlcle(cityDeparture.Latitude, cityDeparture.Longitude,
+		cityDestination.Latitude, cityDestination.Longitude)
+
+	msg := fmt.Sprintf("distance between %s and %s equals %d km",
+		departure, destination, int(dist))
+
+	return h.sendOK(c, msg)
+}
+
+// Ping performs check work server.
 func (h *Hdls) Ping(c *fiber.Ctx) error {
 	if err := h.db.SQLX.Ping(); err != nil {
 		err := fmt.Errorf("database is down: %v", err)

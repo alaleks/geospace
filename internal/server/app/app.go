@@ -92,9 +92,7 @@ func (app *App) RegRouters() {
 	v1.Get("/logout", app.hdls.Logout)
 	// These routes available only auth user
 	user := v1.Group("/user", app.hdls.CheckAuthentication)
-	user.Get("/ping", func(c *fiber.Ctx) error {
-		return c.SendString("OK")
-	})
+	user.Get("/distance", app.hdls.CalculateDistance)
 }
 
 // catchSign will catch SIGINT, SIGHUP, SIGQUIT and SIGTERM and shutdown the server.
