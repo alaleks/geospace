@@ -1,0 +1,21 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Binaries
+cmd/server/main
+cmd/server/geospace
+cmd/client/main
+cmd/client/geospace
+
+#log
+log/
+
+#config
+cfg/
