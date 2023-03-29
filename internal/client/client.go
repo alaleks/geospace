@@ -23,22 +23,14 @@ var (
 	ErrServerInternal = errors.New("server internal error")
 )
 
-type (
-	// Client contains agent instance and technical information.
-	Client struct {
-		Agent   *fiber.Agent
-		Version string
-		Host    string
-		Name    string
-		Token   string
-	}
-
-	// Command represents a command for using app.
-	Command struct {
-		Id   int
-		Name string
-	}
-)
+// Client contains agent instance and technical information.
+type Client struct {
+	Agent   *fiber.Agent
+	Version string
+	Host    string
+	Name    string
+	Token   string
+}
 
 // New returns a new pointer instance a app of client.
 func New(version, host, name string) *Client {
@@ -69,7 +61,7 @@ func (c *Client) Run() {
 
 	// new user login or registration
 	for {
-		err := c.Authentication()
+		err := c.authentication()
 		if err != nil {
 			printErr(err)
 			howExit()
@@ -93,12 +85,13 @@ functional:
 		selectedOptions, err := printer.Show()
 		if err != nil {
 			printErr(err)
+
 			break functional
 		}
 
 		switch selectedOptions {
 		case commandCalcDistance:
-			err = c.CalcDistance()
+			err = c.calcDistance()
 			if err != nil {
 				printErr(err)
 			}
@@ -106,12 +99,15 @@ functional:
 			continue
 		case commandExit:
 			pterm.Info.Println("client closed")
+
 			break functional
+		default:
+			printErrWithExit(ErrInvalidCommand)
 		}
 	}
 }
 
-// checkServer performs checking working server using url /ping.
+// checkServer performs checking work of server using url /ping.
 func (c *Client) checkServer() error {
 	req := c.Agent.Request()
 	req.Header.SetMethod(fiber.MethodGet)
@@ -134,7 +130,8 @@ func (c *Client) checkServer() error {
 // greet prints the greeting message to the terminal.
 func (c *Client) greet() {
 	fmt.Printf("\n\n")
-	s, err := pterm.DefaultBigText.WithLetters(putils.LettersFromString(c.Name)).Srender()
+	s, err := pterm.DefaultBigText.
+		WithLetters(putils.LettersFromString(c.Name)).Srender()
 	if err != nil {
 		return
 	}
@@ -145,7 +142,8 @@ func (c *Client) greet() {
 
 // howExit displays message how to exit the client.
 func howExit() {
-	pterm.DefaultCenter.WithCenterEachLineSeparately().Println("press ctrl + c to exit")
+	pterm.DefaultCenter.WithCenterEachLineSeparately().
+		Println("press ctrl + c to exit")
 }
 
 // printErr displays the error.

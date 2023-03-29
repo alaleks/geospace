@@ -20,8 +20,8 @@ const (
 	commandSignUp = "sign up"
 )
 
-// Authentication performs sign up or login to app.
-func (c *Client) Authentication() error {
+// authentication performs sign up or login to app.
+func (c *Client) authentication() error {
 	var options = [...]string{
 		commandSignUp,
 		commandLogIn,

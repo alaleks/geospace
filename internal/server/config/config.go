@@ -248,7 +248,7 @@ func (cfg *Cfg) readParamFlags() {
 		dbName   = flag.String("d", "", "Name of the database")
 		dbUser   = flag.String("u", "", "User name of the database")
 		dbPass   = flag.String("p", "", "Password of the database")
-		dbSocket = flag.String("s", "", "Socket for connections database")
+		dbSocket = flag.String("s", "", "Socket of connection to database")
 		dbPort   = flag.Int("t", 0, "Port of the database")
 
 		// optional parameters
