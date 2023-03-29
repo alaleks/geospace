@@ -47,9 +47,8 @@ func Init(db *database.DB, cfgSecure config.Secure) *Auth {
 // CheckPass performs check password from user with password from database
 // and returns false if passwords do not match.
 func (a *Auth) CheckPass(passFromUser, passFromDB string) bool {
-	decryptPass := dongle.Decrypt.FromHexString(passFromDB).ByBlowfish(a.cipher).ToString()
-
-	return strings.TrimSpace(passFromUser) != decryptPass
+	return strings.TrimSpace(passFromUser) ==
+		dongle.Decrypt.FromHexString(passFromDB).ByBlowfish(a.cipher).ToString()
 }
 
 // EncryptPass performs encrypt password from user.

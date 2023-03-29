@@ -3,6 +3,7 @@ package database
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/alaleks/geospace/internal/server/config"
@@ -103,36 +104,25 @@ func (db *DB) GetUser(email string) (models.User, error) {
 	return user, nil
 }
 
-// FindCityByName provides a get city by name from database.
-func (db *DB) FindCityByName(cityName string) (models.City, error) {
-	var city models.City
-	err := db.SQLX.Get(&city, `SELECT * FROM cities
-		WHERE name = ?`, cityName)
-	if err == nil {
-		return city, nil
+// FindCity provides a get city by name from database.
+func (db *DB) FindCity(cityRaw string) (models.City, error) {
+	var (
+		cityName    string
+		countryName string
+		city        models.City
+	)
+
+	cityRawSplit := strings.Split(cityRaw, ",")
+	if len(cityRawSplit) == 2 {
+		cityName = strings.TrimSpace(cityRawSplit[0])
+		countryName = strings.TrimSpace(cityRawSplit[1])
+	} else {
+		cityName = strings.TrimSpace(cityRaw)
 	}
 
-	// if not found to try find city by alternative name
-	err = db.SQLX.Get(&city, `SELECT * FROM cities 
-		WHERE alternative_names LIKE ?`, "%"+cityName+",%")
-	if err != nil {
-		return city, err
-	}
-
-	return city, nil
-}
-
-// FindCityByNameAndCountry returns a city by name and country.
-func (db *DB) FindCityByNameAndCountry(cityName, country string) (models.City, error) {
-	var city models.City
 	err := db.SQLX.Get(&city, `SELECT * FROM cities 
-		WHERE name = ? AND country LIKE ?`, cityName, "%"+country+"%")
-	if err == nil {
-		return city, nil
-	}
-
-	err = db.SQLX.Get(&city, `SELECT * FROM cities 
-		WHERE alternative_names LIKE ? AND country_code = ?`, "%"+cityName+",%", "%"+country+"%")
+	WHERE (name = ? OR alternative_names LIKE ?) 
+	AND country LIKE ?;`, cityName, "%"+cityName+",%", countryName+"%")
 	if err != nil {
 		return city, err
 	}

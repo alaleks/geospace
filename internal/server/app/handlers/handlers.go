@@ -168,7 +168,6 @@ func (h *Hdls) CalculateDistance(c *fiber.Ctx) error {
 	var (
 		departure   = c.Query("departure")
 		destination = c.Query("destination")
-		country     = c.Query("country")
 	)
 
 	if strings.TrimSpace(departure) == "" ||
@@ -182,21 +181,13 @@ func (h *Hdls) CalculateDistance(c *fiber.Ctx) error {
 		err             error
 	)
 
-	if country != "" {
-		cityDeparture, err = h.db.FindCityByNameAndCountry(departure, country)
-	} else {
-		cityDeparture, err = h.db.FindCityByName(departure)
-	}
+	cityDeparture, err = h.db.FindCity(departure)
 	if err != nil {
 		return h.errorBadRequest(c,
 			fmt.Errorf("%s : %v", departure, ErrFindCity))
 	}
 
-	if country != "" {
-		cityDestination, err = h.db.FindCityByNameAndCountry(destination, country)
-	} else {
-		cityDestination, err = h.db.FindCityByName(destination)
-	}
+	cityDestination, err = h.db.FindCity(destination)
 	if err != nil {
 		return h.errorBadRequest(c,
 			fmt.Errorf("%s : %v", destination, ErrFindCity))
@@ -205,8 +196,9 @@ func (h *Hdls) CalculateDistance(c *fiber.Ctx) error {
 	dist := distance.CalcGreatCirlcle(cityDeparture.Latitude, cityDeparture.Longitude,
 		cityDestination.Latitude, cityDestination.Longitude)
 
-	msg := fmt.Sprintf("distance between %s and %s equals %d km",
-		departure, destination, int(dist))
+	msg := fmt.Sprintf("distance between %s, %s and %s, %s equals %d km",
+		cityDeparture.Name, cityDeparture.Country,
+		cityDestination.Name, cityDestination.Country, int(dist))
 
 	return h.sendOK(c, msg)
 }
