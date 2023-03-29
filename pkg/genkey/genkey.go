@@ -8,7 +8,7 @@ import (
 
 const chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-// CreateUsingStrperforms a random key generation specified size.
+// CreateUsingStr performs a random key generation specified size from chars.
 func CreateUsingStr(sizeKey int) string {
 	var (
 		key         string

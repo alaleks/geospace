@@ -16,7 +16,6 @@ import (
 
 // typical errors
 var (
-	ErrMissingRequiredField          = errors.New("missing are no required field")
 	ErrUserNotExists                 = errors.New("user with current email does not exist")
 	ErrInvalidPassword               = errors.New("password is invalid")
 	ErrInvalidAuthentication         = errors.New("permission denied, user are not authorization")
@@ -26,10 +25,8 @@ var (
 
 // messages
 var (
-	MsgCreateUser = fmt.Sprintf("successfully registration")
-	MsgAuth       = fmt.Sprintf("successfully authentication")
-	MsgLogout     = fmt.Sprintf("successfully exiting")
-	MsgPing       = fmt.Sprintf("all systems work properly :-)")
+	MsgLogout = "successfully exiting"
+	MsgPing   = "all systems work properly :-)"
 )
 
 // Hdls represents the handlers and includes db instance.
@@ -46,8 +43,8 @@ func New(db *database.DB, auth *authentication.Auth) *Hdls {
 	}
 }
 
-// Register provides registration user.
-func (h *Hdls) Register(c *fiber.Ctx) error {
+// SignUp provides registration a new user.
+func (h *Hdls) SignUp(c *fiber.Ctx) error {
 	var user struct {
 		Name     string `json:"name"`
 		Password string `json:"password"`
@@ -58,11 +55,13 @@ func (h *Hdls) Register(c *fiber.Ctx) error {
 		return h.errorBadRequest(c, err)
 	}
 
-	if user.Email == "" ||
-		user.Name == "" ||
-		user.Password == "" ||
-		!strings.Contains(user.Email, "@") {
-		return h.errorBadRequest(c, ErrMissingRequiredField)
+	switch {
+	case user.Email == "":
+		return h.errorBadRequest(c, fmt.Errorf("email cannot be empty"))
+	case !strings.Contains(user.Email, "@"):
+		return h.errorBadRequest(c, fmt.Errorf("email has invalid format"))
+	case user.Password == "":
+		return h.errorBadRequest(c, fmt.Errorf("password cannot be empty"))
 	}
 
 	uid, err := h.db.CreateUser(user.Name, user.Email, h.auth.EncryptPass(user.Password))
@@ -75,16 +74,7 @@ func (h *Hdls) Register(c *fiber.Ctx) error {
 		return h.errorBadRequest(c, err)
 	}
 
-	c.Cookie(&fiber.Cookie{
-		Name:     "access_token",
-		Value:    token,
-		Path:     "/",
-		MaxAge:   int(authentication.Expiration),
-		Secure:   false,
-		HTTPOnly: true,
-	})
-
-	return h.sendOK(c, MsgCreateUser)
+	return h.sendOK(c, "Token: "+token)
 }
 
 // Login provides authentification user.
@@ -98,10 +88,13 @@ func (h *Hdls) Login(c *fiber.Ctx) error {
 		return h.errorBadRequest(c, err)
 	}
 
-	if user.Email == "" ||
-		user.Password == "" ||
-		!strings.Contains(user.Email, "@") {
-		return h.errorBadRequest(c, ErrMissingRequiredField)
+	switch {
+	case user.Email == "":
+		return h.errorBadRequest(c, fmt.Errorf("email cannot be empty"))
+	case !strings.Contains(user.Email, "@"):
+		return h.errorBadRequest(c, fmt.Errorf("email has invalid format"))
+	case user.Password == "":
+		return h.errorBadRequest(c, fmt.Errorf("password cannot be empty"))
 	}
 
 	userDB, err := h.db.GetUser(user.Email)
@@ -118,16 +111,21 @@ func (h *Hdls) Login(c *fiber.Ctx) error {
 		return h.errorBadRequest(c, err)
 	}
 
-	c.Cookie(&fiber.Cookie{
-		Name:     "access_token",
-		Value:    token,
-		Path:     "/",
-		MaxAge:   int(authentication.Expiration),
-		Secure:   false,
-		HTTPOnly: true,
-	})
+	return h.sendOK(c, "Token: "+token)
+}
 
-	return h.sendOK(c, MsgAuth)
+// GetCountry returns list country with country code.
+func (h *Hdls) GetCountry(c *fiber.Ctx) error {
+	var countries []string
+
+	err := h.db.SQLX.Select(&countries,
+		`SELECT DISTINCT CONCAT(country_code, ": ", country) AS country 
+		FROM cities WHERE country <> "" ORDER BY country;`)
+	if err != nil {
+		return h.errorBadRequest(c, err)
+	}
+
+	return c.SendString(strings.Join(countries, ","))
 }
 
 // Logout performs exit user.
@@ -170,7 +168,7 @@ func (h *Hdls) CalculateDistance(c *fiber.Ctx) error {
 	var (
 		departure   = c.Query("departure")
 		destination = c.Query("destination")
-		countryCode = c.Query("country_code")
+		country     = c.Query("country")
 	)
 
 	if strings.TrimSpace(departure) == "" ||
@@ -184,20 +182,20 @@ func (h *Hdls) CalculateDistance(c *fiber.Ctx) error {
 		err             error
 	)
 
-	if countryCode != "" {
-		cityDeparture, err = h.db.FindCityByNameAndCountryCode(departure, countryCode)
+	if country != "" {
+		cityDeparture, err = h.db.FindCityByNameAndCountry(departure, country)
 	} else {
-		cityDeparture, err = h.db.FindCityByName(departure, countryCode)
+		cityDeparture, err = h.db.FindCityByName(departure)
 	}
 	if err != nil {
 		return h.errorBadRequest(c,
 			fmt.Errorf("%s : %v", departure, ErrFindCity))
 	}
 
-	if countryCode != "" {
-		cityDestination, err = h.db.FindCityByNameAndCountryCode(destination, countryCode)
+	if country != "" {
+		cityDestination, err = h.db.FindCityByNameAndCountry(destination, country)
 	} else {
-		cityDestination, err = h.db.FindCityByName(destination, countryCode)
+		cityDestination, err = h.db.FindCityByName(destination)
 	}
 	if err != nil {
 		return h.errorBadRequest(c,
