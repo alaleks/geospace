@@ -14,13 +14,15 @@ import (
 )
 
 const (
-	Expiration = time.Second * 259200
+	Expiration = time.Second * 259200 // expiration time token validity period
 )
 
+// typical errors
 var (
 	ErrInvalidClaim = errors.New("invalid token claim")
 )
 
+// Auth contains db instance, cipher and secret key for JWT.
 type Auth struct {
 	db        *database.DB
 	cipher    *dongle.Cipher
@@ -46,11 +48,8 @@ func Init(db *database.DB, cfgSecure config.Secure) *Auth {
 // and returns false if passwords do not match.
 func (a *Auth) CheckPass(passFromUser, passFromDB string) bool {
 	decryptPass := dongle.Decrypt.FromHexString(passFromDB).ByBlowfish(a.cipher).ToString()
-	if strings.TrimSpace(passFromUser) != decryptPass {
-		return false
-	}
 
-	return true
+	return strings.TrimSpace(passFromUser) != decryptPass
 }
 
 // EncryptPass performs encrypt password from user.
