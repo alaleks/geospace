@@ -1,6 +1,6 @@
 # geospace
 
-**geospace** geo service api for calculating distances between cities and much more...
+**geospace** service with client for calculating distances between cities and much more...
 
 ## Installation
 
