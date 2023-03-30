@@ -82,9 +82,9 @@ go run -ldflags "-X main.Version=v1 -X main.Host=:3000 -X main.Name=geo" main.go
 ## Methods
 
  - /ping - check server health. If server is healthy return 200.
- - /register - provides sign up. 
+ - /v1/register - provides sign up. 
  
- If is registered successfully returned 200 and access token in format: [Token: Value of token]
+If is registered successfully returned 200 and access token in format: [Token: Value of token]
 
 Token need transfer to:
 - Header as parameter Authorization in format [Bearer token]
@@ -99,3 +99,32 @@ Token need transfer to:
     "password": "UserPass"
 }
  ```
+- /v1/login - provides log in. 
+
+If is log in successfully returned 200 and access token in format: [Token: Value of token]
+
+
+Token need transfer to:
+- Header as parameter Authorization in format [Bearer token]
+- Cookie access_token
+
+ ```
+ POST application/json
+
+{
+    "email": "Usermail",
+    "password": "UserPass"
+}
+```
+- /v1/logout - provides log out.
+- /v1/user/distance - provides calculate distance between two points by coordinates.
+
+ ```
+GET application/json
+
+http --follow --timeout 3600 GET 'http://localhost:3000/v1/user/distance?departure=Moscow, Ru&destination=Краснодар&Bearer=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2ODAzNDM4ODksInVpZCI6MH0.L_kAIH_8FmrIAwGEkJ4CZU13QOsollvH9Xebufjxfxw' \
+```
+Where:
+
+- Departure - city of departure
+- Destination - city of destination
