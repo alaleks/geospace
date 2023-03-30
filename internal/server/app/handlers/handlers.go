@@ -206,8 +206,8 @@ func (h *Hdls) CalculateDistance(c *fiber.Ctx) error {
 // Ping performs check work server.
 func (h *Hdls) Ping(c *fiber.Ctx) error {
 	if err := h.db.SQLX.Ping(); err != nil {
-		err := fmt.Errorf("database is down: %v", err)
-		return h.errorBadRequest(c, err)
+		return c.Status(fiber.StatusInternalServerError).
+			SendString(fmt.Errorf("database is down: %v", err).Error())
 	}
 
 	return h.sendOK(c, MsgPing)
