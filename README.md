@@ -83,6 +83,13 @@ go run -ldflags "-X main.Version=v1 -X main.Host=:3000 -X main.Name=geo" main.go
 
  - /ping - check server health. If server is healthy return 200.
  - /register - provides sign up. 
+ 
+ If is registered successfully returned 200 and access token in format: [Token: Value of token]
+
+Token need transfer to:
+    - Header as parameter Authorization in format [Bearer token]
+    - Cookie access_token
+
  ```
  POST application/json
 
