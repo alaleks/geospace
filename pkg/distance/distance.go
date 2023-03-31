@@ -8,10 +8,10 @@ const (
 	earthRaidus = 6371 // radius of the earth in kilometers.
 )
 
-// CalcGreatCirlcle perfoms calculatin the distance
+// CalcGreatCircle perfoms calculatin the distance
 // between two points by coordinates using the formula:
 // https://en.wikipedia.org/wiki/Great-circle_distance
-func CalcGreatCirlcle(lat1, lon1, lat2, lon2 float64) float64 {
+func CalcGreatCircle(lat1, lon1, lat2, lon2 float64) float64 {
 	// convert latitudes and longitude degrees to radians.
 	lat1 = degreesToRadians(lat1)
 	lon1 = degreesToRadians(lon1)
