@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/pterm/pterm"
@@ -92,11 +91,16 @@ func (c *Client) signUp() error {
 		return fmt.Errorf(string(body))
 	}
 
-	if !strings.HasPrefix(string(body), "Token: ") {
+	var response struct {
+		Token string `json:"token"`
+	}
+
+	err = json.Unmarshal(body, &response)
+	if err != nil {
 		return ErrInvalidAuthentication
 	}
 
-	c.Token = strings.TrimPrefix(string(body), "Token: ")
+	c.Token = response.Token
 
 	return nil
 }
@@ -142,11 +146,16 @@ func (c *Client) login() error {
 		return fmt.Errorf(string(body))
 	}
 
-	if !strings.HasPrefix(string(body), "Token: ") {
+	var response struct {
+		Token string `json:"token"`
+	}
+
+	err = json.Unmarshal(body, &response)
+	if err != nil {
 		return ErrInvalidAuthentication
 	}
 
-	c.Token = strings.TrimPrefix(string(body), "Token: ")
+	c.Token = response.Token
 
 	return nil
 }

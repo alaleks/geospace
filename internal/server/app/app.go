@@ -100,6 +100,10 @@ func (app *App) RegRouters() {
 	// these routes available only auth user
 	user := v1.Group("/user", app.hdls.CheckAuthentication)
 	user.Get("/distance", app.hdls.CalculateDistance)
+
+	// api
+	api := v1.Group("/api", app.hdls.CheckAuthentication)
+	api.Get("/distance", app.hdls.CalculateDistanceAPI)
 }
 
 // catchSign will catch SIGINT, SIGHUP, SIGQUIT and SIGTERM and shutdown the server.
