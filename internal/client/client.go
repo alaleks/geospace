@@ -13,9 +13,11 @@ import (
 )
 
 const (
-	contentTypeJSON     = "application/json"
-	commandCalcDistance = "calculate distance"
-	commandExit         = "exit"
+	contentTypeJSON        = "application/json"
+	commandCalcDistance    = "calculate distance"
+	commandFindNearby      = "find nearby cities"
+	commandFindNearbyCoord = "find nearby cities by coordinate"
+	commandExit            = "exit"
 )
 
 // typical errors
@@ -78,6 +80,8 @@ functional:
 	for {
 		var commands = [...]string{
 			commandCalcDistance,
+			commandFindNearby,
+			commandFindNearbyCoord,
 			commandExit,
 		}
 
@@ -92,6 +96,20 @@ functional:
 		switch selectedOptions {
 		case commandCalcDistance:
 			err = c.calcDistance()
+			if err != nil {
+				printErr(err)
+			}
+
+			continue
+		case commandFindNearby:
+			err = c.getNearbyCities()
+			if err != nil {
+				printErr(err)
+			}
+
+			continue
+		case commandFindNearbyCoord:
+			err = c.getNearbyCitiesbyCoord()
 			if err != nil {
 				printErr(err)
 			}

@@ -16,19 +16,19 @@ import (
 )
 
 const (
-	cfgDirName    = "/cfg"
-	cfgFile       = "/config.yaml"
-	sizeIVCipher  = 8
-	sizeKeyCipher = 48
-	sizeKeySecret = 64
+	cfgDirName    = "/cfg"         // folder name for config
+	cfgFile       = "/config.yaml" // file name for config
+	sizeIVCipher  = 8              // size of IV cipher in bytes
+	sizeKeyCipher = 48             // size of key cipher in bytes
+	sizeKeySecret = 64             // size of key secret in bytes
 )
 
 type (
 	// Cfg contains the configuration of app.
 	Cfg struct {
-		CfgDatabase CfgDatabase `yaml:"database"`
-		App         App         `yaml:"app"`
-		Secure      Secure      `yaml:"secure"`
+		CfgDatabase CfgDatabase `yaml:"database"` // settings of database
+		App         App         `yaml:"app"`      // settings of app
+		Secure      Secure      `yaml:"secure"`   // settings of secure
 	}
 
 	// CfgDatabase contains the configuration for a database connection.
@@ -140,7 +140,7 @@ func (s *Secure) GetIVCipher() string {
 	return dongle.Decode.FromString(s.IV).ByBase64().ToString()
 }
 
-// GetSecretJWT returns SecretJWT  after decrypt.
+// GetSecretJWT returns SecretJWT after decrypt.
 func (s *Secure) GetSecretJWT() string {
 	return dongle.Decode.FromString(s.SecretJWT).ByBase64().ToString()
 }
@@ -268,6 +268,8 @@ func (cfg *Cfg) readParamFlags() {
 		Port:       *dbPort,
 	}
 
+	// check optional parameters
+	// if empty to stay default value
 	if *port != 0 {
 		cfg.App.Port = fmt.Sprintf(":%d", *port)
 	}

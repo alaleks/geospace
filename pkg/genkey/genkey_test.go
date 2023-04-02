@@ -12,7 +12,7 @@ func TestCreateUsingStr(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("gen key size %d", tt), func(t *testing.T) {
-			key := genkey.CreateUsingStr(tt)
+			key := genkey.CreateFromChars(tt)
 			if len(key) != tt {
 				t.Errorf("an incorrect key size was generated: %d but should be %d", tt, len(key))
 			}
@@ -26,7 +26,7 @@ func BenchmarkCreateUsingStr(b *testing.B) {
 		b.ResetTimer()
 
 		b.Run(fmt.Sprintf("gen key size %d", tt), func(b *testing.B) {
-			_ = genkey.CreateUsingStr(tt)
+			_ = genkey.CreateFromChars(tt)
 		})
 	}
 }
