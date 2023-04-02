@@ -2,6 +2,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -23,6 +24,7 @@ var (
 	ErrEmptyDataForCalculateDisnance = errors.New("departure and destination cannot be empty")
 	ErrFindCity                      = errors.New("city in not found")
 	ErrNotAvailable                  = errors.New("no access to service")
+	ErrEmptyResults                  = errors.New("was get empty results")
 )
 
 // messages
@@ -192,45 +194,53 @@ func (h *Hdls) CalculateDistance(c *fiber.Ctx) error {
 	}
 
 	var (
-		cityDeparture   models.City
-		cityDestination models.City
-		err             error
+		cityDeparture     models.City
+		cityDestination   models.City
+		distStraight      int
+		chErr             = make(chan error, 1)
+		cityDepartureCh   = make(chan models.City, 1)
+		cityDestinationCh = make(chan models.City, 1)
 	)
 
-	cityDeparture, err = h.db.FindCity(departure)
-	if err != nil {
-		return h.errorBadRequest(c,
-			fmt.Errorf("%s : %v", departure, ErrFindCity))
+	// run concurrently findind
+	go h.db.FindCityConc(departure, chErr, cityDepartureCh)
+	go h.db.FindCityConc(destination, chErr, cityDestinationCh)
+
+	for {
+		select {
+		case err := <-chErr:
+			return h.errorApiRequest(c, fiber.StatusBadRequest, err)
+		case cityDeparture = <-cityDepartureCh:
+			continue
+		case cityDestination = <-cityDestinationCh:
+			continue
+		default:
+			if cityDeparture == (models.City{}) || cityDestination == (models.City{}) {
+				continue
+			}
+
+			distStraight = int(distance.CalcGreatCircle(
+				cityDeparture.Latitude, cityDeparture.Longitude,
+				cityDestination.Latitude, cityDestination.Longitude))
+
+			distanceRoad, err := h.getDistancebyRoad(cityDeparture.Longitude, cityDeparture.Latitude,
+				cityDestination.Longitude, cityDestination.Latitude)
+			if err != nil || distanceRoad == 0 {
+				msg = fmt.Sprintf("distance between %s, %s and %s, %s by straight line %d km",
+					cityDeparture.Name, cityDeparture.Country,
+					cityDestination.Name, cityDestination.Country, distStraight)
+
+				return h.sendOK(c, msg)
+			}
+
+			msg = fmt.Sprintf("distance between %s, %s and %s, %s:\nby straight line %d km / by road %d km",
+				cityDeparture.Name, cityDeparture.Country,
+				cityDestination.Name, cityDestination.Country,
+				distStraight, distanceRoad)
+
+			return h.sendOK(c, msg)
+		}
 	}
-
-	cityDestination, err = h.db.FindCity(destination)
-	if err != nil {
-		return h.errorBadRequest(c,
-			fmt.Errorf("%s : %v", destination, ErrFindCity))
-	}
-
-	distStraight := distance.CalcGreatCircle(cityDeparture.Latitude, cityDeparture.Longitude,
-		cityDestination.Latitude, cityDestination.Longitude)
-
-	distanceRoad, err := h.getDistancebyRoad(cityDeparture.Longitude, cityDeparture.Latitude,
-		cityDestination.Longitude, cityDestination.Latitude)
-
-	if err != nil || distanceRoad == 0 {
-		msg = fmt.Sprintf("distance between %s, %s and %s, %s in a straight line %d km",
-			cityDeparture.Name, cityDeparture.Country,
-			cityDestination.Name, cityDestination.Country, int(distStraight))
-
-		return h.sendOK(c, msg)
-	}
-
-	msg = fmt.Sprintf(`distance between %s, %s and %s, %s:
-	- in a straight line %d km
-	- by road %d km`,
-		cityDeparture.Name, cityDeparture.Country,
-		cityDestination.Name, cityDestination.Country,
-		int(distStraight), distanceRoad)
-
-	return h.sendOK(c, msg)
 }
 
 // Ping performs check work server.
@@ -263,37 +273,62 @@ func (h *Hdls) getDistancebyRoad(lon1, lat1, lon2, lat2 float64) (int, error) {
 	url := fmt.Sprintf("http://router.project-osrm.org/route/v1/driving/%f,%f;%f,%f?overview=false",
 		lon1, lat1, lon2, lat2)
 
-	req := h.agent.Request()
-	req.SetTimeout(500 * time.Millisecond)
-	req.Header.SetMethod(fiber.MethodGet)
-	req.SetRequestURI(url)
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
 
-	if err := h.agent.Parse(); err != nil {
-		return 0, err
-	}
+	var (
+		chErr   = make(chan error, 1)
+		distRaw = make(chan float64, 1)
+	)
 
-	code, body, _ := h.agent.Bytes()
-	if code != 200 {
-		return 0, ErrNotAvailable
-	}
+	go func() {
+		req := h.agent.Request()
+		req.Header.SetMethod(fiber.MethodGet)
+		req.SetRequestURI(url)
 
-	var response struct {
-		Code   string `json:"code"`
-		Routes []struct {
-			Distance float64 `json:"distance"`
+		if err := h.agent.Parse(); err != nil {
+			chErr <- err
+			return
 		}
-	}
 
-	err := json.Unmarshal(body, &response)
-	if err != nil {
+		code, body, _ := h.agent.Bytes()
+		if code != 200 {
+			chErr <- ErrNotAvailable
+			return
+		}
+
+		var response struct {
+			Code   string `json:"code"`
+			Routes []struct {
+				Distance float64 `json:"distance"`
+			}
+		}
+
+		err := json.Unmarshal(body, &response)
+		if err != nil {
+			chErr <- err
+			return
+		}
+
+		if response.Code != "Ok" {
+			chErr <- err
+			return
+		}
+
+		if len(response.Routes) == 0 {
+			chErr <- ErrEmptyResults
+			return
+		}
+
+		distRaw <- response.Routes[0].Distance
+	}()
+
+	select {
+	case <-ctx.Done():
+		return 0, ctx.Err()
+	case err := <-chErr:
 		return 0, err
+	case result := <-distRaw:
+		return int(result / 1000), nil
 	}
-
-	if response.Code != "Ok" {
-		return 0, err
-	}
-
-	distance := int(response.Routes[0].Distance / 1000)
-
-	return distance, nil
 }
