@@ -11,20 +11,18 @@ import (
 
 	"github.com/alaleks/geospace/internal/server/app/authentication"
 	"github.com/alaleks/geospace/internal/server/database"
-	"github.com/alaleks/geospace/internal/server/database/models"
-	"github.com/alaleks/geospace/pkg/distance"
 	"github.com/gofiber/fiber/v2"
 )
 
 // typical errors
 var (
-	ErrUserNotExists                 = errors.New("user with current email does not exist")
-	ErrInvalidPassword               = errors.New("password is invalid")
-	ErrInvalidAuthentication         = errors.New("permission denied, user are not authorization")
-	ErrEmptyDataForCalculateDisnance = errors.New("departure and destination cannot be empty")
-	ErrFindCity                      = errors.New("city in not found")
-	ErrNotAvailable                  = errors.New("no access to service")
-	ErrEmptyResults                  = errors.New("was get empty results")
+	ErrUserNotExists         = errors.New("user with current email does not exist")
+	ErrInvalidPassword       = errors.New("password is invalid")
+	ErrInvalidAuthentication = errors.New("permission denied, user are not authorization")
+	ErrEmptyParam            = errors.New("parameter cannot be empty")
+	ErrFindCity              = errors.New("city in not found")
+	ErrNotAvailable          = errors.New("no access to service")
+	ErrEmptyResults          = errors.New("was get empty results")
 )
 
 // messages
@@ -154,7 +152,7 @@ func (h *Hdls) Logout(c *fiber.Ctx) error {
 		Value:   "",
 		Expires: expired,
 	})
-	return h.sendOK(c, MsgLogout)
+	return c.SendString(MsgLogout)
 }
 
 // CheckAuthentication checks token validity.
@@ -180,69 +178,6 @@ func (h *Hdls) CheckAuthentication(c *fiber.Ctx) error {
 	return c.Next()
 }
 
-// CalculateDistance performs a distance between two cities.
-func (h *Hdls) CalculateDistance(c *fiber.Ctx) error {
-	var (
-		departure   = c.Query("departure")
-		destination = c.Query("destination")
-		msg         string
-	)
-
-	if strings.TrimSpace(departure) == "" ||
-		strings.TrimSpace(destination) == "" {
-		return h.errorAuth(c, ErrEmptyDataForCalculateDisnance)
-	}
-
-	var (
-		cityDeparture     models.City
-		cityDestination   models.City
-		distStraight      int
-		chErr             = make(chan error, 1)
-		cityDepartureCh   = make(chan models.City, 1)
-		cityDestinationCh = make(chan models.City, 1)
-	)
-
-	// run concurrently findind
-	go h.db.FindCityConc(departure, chErr, cityDepartureCh)
-	go h.db.FindCityConc(destination, chErr, cityDestinationCh)
-
-	for {
-		select {
-		case err := <-chErr:
-			return h.errorApiRequest(c, fiber.StatusBadRequest, err)
-		case cityDeparture = <-cityDepartureCh:
-			continue
-		case cityDestination = <-cityDestinationCh:
-			continue
-		default:
-			if cityDeparture == (models.City{}) || cityDestination == (models.City{}) {
-				continue
-			}
-
-			distStraight = int(distance.CalcGreatCircle(
-				cityDeparture.Latitude, cityDeparture.Longitude,
-				cityDestination.Latitude, cityDestination.Longitude))
-
-			distanceRoad, err := h.getDistancebyRoad(cityDeparture.Longitude, cityDeparture.Latitude,
-				cityDestination.Longitude, cityDestination.Latitude)
-			if err != nil || distanceRoad == 0 {
-				msg = fmt.Sprintf("distance between %s, %s and %s, %s by straight line %d km",
-					cityDeparture.Name, cityDeparture.Country,
-					cityDestination.Name, cityDestination.Country, distStraight)
-
-				return h.sendOK(c, msg)
-			}
-
-			msg = fmt.Sprintf("distance between %s, %s and %s, %s:\nby straight line %d km / by road %d km",
-				cityDeparture.Name, cityDeparture.Country,
-				cityDestination.Name, cityDestination.Country,
-				distStraight, distanceRoad)
-
-			return h.sendOK(c, msg)
-		}
-	}
-}
-
 // Ping performs check work server.
 func (h *Hdls) Ping(c *fiber.Ctx) error {
 	if err := h.db.SQLX.Ping(); err != nil {
@@ -250,7 +185,7 @@ func (h *Hdls) Ping(c *fiber.Ctx) error {
 			SendString(fmt.Errorf("database is down: %v", err).Error())
 	}
 
-	return h.sendOK(c, MsgPing)
+	return c.SendString(MsgPing)
 }
 
 // errorBadRequest performs send status code 400 and error.
@@ -261,11 +196,6 @@ func (h *Hdls) errorBadRequest(c *fiber.Ctx, err error) error {
 // errorAuth performs send status code 401 and error.
 func (h *Hdls) errorAuth(c *fiber.Ctx, err error) error {
 	return c.Status(fiber.StatusUnauthorized).SendString(err.Error())
-}
-
-// sendOK performs send status 200 and message.
-func (h *Hdls) sendOK(c *fiber.Ctx, msg string) error {
-	return c.Status(fiber.StatusOK).SendString(msg)
 }
 
 // getDistancebyRoad getting distance between two points by road using api OpenStreetMap.

@@ -1,6 +1,7 @@
 // Package schema is the structure of a database described.
 package schema
 
+// City represents command SQL for creating a cities table.
 var City = `
 	CREATE TABLE cities (
 		cid INT auto_increment NULL,
@@ -23,6 +24,8 @@ var City = `
 		DEFAULT CHARSET=utf8mb4
 		COLLATE=utf8mb4_general_ci;
 `
+
+// User represents command SQL for creating a users table.
 var User = `
 	CREATE TABLE users (
 		uid INT auto_increment NULL,

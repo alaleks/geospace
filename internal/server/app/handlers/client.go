@@ -10,15 +10,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// RespCity represents a data for response list near a citу,
-// supplementing the data with the distance field.
-type RespCity struct {
-	models.City
-	Distance int `json:"distance"`
-}
-
-// CalculateDistanceAPI performs a distance between two cities.
-func (h *Hdls) CalculateDistanceAPI(c *fiber.Ctx) error {
+// CalculateDistance performs a distance between two cities.
+func (h *Hdls) CalculateDistance(c *fiber.Ctx) error {
 	var (
 		departure   = c.Query("departure")
 		destination = c.Query("destination")
@@ -35,12 +28,9 @@ func (h *Hdls) CalculateDistanceAPI(c *fiber.Ctx) error {
 	}
 
 	var (
-		response struct {
-			Departure        models.City `json:"departure"`
-			Destination      models.City `json:"destination"`
-			DistanceStraight int         `json:"distance_straight"`
-			DistanceRoad     int         `json:"distance_road,omitempty"`
-		}
+		cityDeparture     models.City
+		cityDestination   models.City
+		distStraight      int
 		chErr             = make(chan error, 1)
 		cityDepartureCh   = make(chan models.City, 1)
 		cityDestinationCh = make(chan models.City, 1)
@@ -50,39 +40,42 @@ func (h *Hdls) CalculateDistanceAPI(c *fiber.Ctx) error {
 	go h.db.FindCityConc(departure, chErr, cityDepartureCh)
 	go h.db.FindCityConc(destination, chErr, cityDestinationCh)
 
-	// in cycle will be wait when search is done
-	// at the error, immediately return the request error
 	for {
 		select {
 		case err := <-chErr:
 			err = fmt.Errorf("error find city in db: %v", err)
 			return h.errorApiRequest(c, fiber.StatusBadRequest, err)
-		case response.Departure = <-cityDepartureCh:
+		case cityDeparture = <-cityDepartureCh:
 			continue
-		case response.Destination = <-cityDestinationCh:
+		case cityDestination = <-cityDestinationCh:
 			continue
 		default:
-			// keep going until we get the data
-			if response.Departure == (models.City{}) || response.Destination == (models.City{}) {
+			if cityDeparture == (models.City{}) || cityDestination == (models.City{}) {
 				continue
 			}
 
-			response.DistanceStraight = int(distance.CalcGreatCircle(
-				response.Departure.Latitude, response.Departure.Longitude,
-				response.Destination.Latitude, response.Destination.Longitude))
+			distStraight = int(distance.CalcGreatCircle(
+				cityDeparture.Latitude, cityDeparture.Longitude,
+				cityDestination.Latitude, cityDestination.Longitude))
 
-			response.DistanceRoad, _ = h.getDistancebyRoad(
-				response.Departure.Longitude, response.Departure.Latitude,
-				response.Destination.Longitude, response.Destination.Latitude)
+			response := fmt.Sprintf("distance between %s, %s and %s, %s by straight line %d km",
+				cityDeparture.Name, cityDeparture.Country,
+				cityDestination.Name, cityDestination.Country, distStraight)
 
-			return c.JSON(response)
+			distanceRoad, err := h.getDistancebyRoad(cityDeparture.Longitude, cityDeparture.Latitude,
+				cityDestination.Longitude, cityDestination.Latitude)
+			if err == nil || distanceRoad != 0 {
+				response += fmt.Sprintf(" / by road %d km", distanceRoad)
+			}
+
+			return c.SendString(response)
 		}
 	}
 }
 
-// FindObjectsNearByNameAP performs search for all objects at a distance
+// FindObjectsNearByName performs search for all objects at a distance
 // until n km from the object passed in the query.
-func (h *Hdls) FindObjectsNearByNameAPI(c *fiber.Ctx) error {
+func (h *Hdls) FindObjectsNearByName(c *fiber.Ctx) error {
 	var (
 		departure  = c.Query("departure")
 		distanceTo = c.Query("distanceTo")
@@ -97,7 +90,6 @@ func (h *Hdls) FindObjectsNearByNameAPI(c *fiber.Ctx) error {
 		err := fmt.Errorf("distanceTo %v", ErrEmptyParam)
 		return h.errorApiRequest(c, fiber.StatusBadRequest, err)
 	}
-
 	// convert distance to int
 	dist, err := strconv.Atoi(distanceTo)
 	if err != nil {
@@ -110,33 +102,24 @@ func (h *Hdls) FindObjectsNearByNameAPI(c *fiber.Ctx) error {
 		return h.errorApiRequest(c, fiber.StatusBadRequest, err)
 	}
 
-	var respCities = make([]RespCity, 0, len(cities))
+	var respCities = make([]string, 0, len(cities))
 	for _, city := range cities {
-		respCities = append(respCities, RespCity{
-			city,
-			int(distance.CalcGreatCircle(ciyDeparture.Latitude, ciyDeparture.Longitude,
-				city.Latitude, city.Longitude)),
-		})
+		dist := distance.CalcGreatCircle(ciyDeparture.Latitude, ciyDeparture.Longitude,
+			city.Latitude, city.Longitude)
+		respCities = append(respCities, fmt.Sprintf("%s, %s (%d km)", city.Name, city.Country, int(dist)))
 	}
 
-	response := struct {
-		Departure    models.City `json:"departure"`
-		DistanceTo   int         `json:"distance_to"`
-		QtyNearby    int         `json:"qty_nearby"`
-		CitiesNearby []RespCity  `json:"cities_nearby"`
-	}{
-		Departure:    ciyDeparture,
-		DistanceTo:   dist,
-		QtyNearby:    len(respCities),
-		CitiesNearby: respCities,
-	}
+	response := fmt.Sprintf("There are %d cities at a distance %d km from %s, %s\n",
+		len(respCities), dist, ciyDeparture.Name, ciyDeparture.Country)
 
-	return c.JSON(response)
+	response += fmt.Sprintf("List:\n %s", strings.Join(respCities, ", "))
+
+	return c.SendString(response)
 }
 
-// FindObjectsNearByCoordAPI performs search for all objects at a distance
+// FindObjectsNearByCoord performs search for all objects at a distance
 // until n km from coordinates passed in the query.
-func (h *Hdls) FindObjectsNearByCoordAPI(c *fiber.Ctx) error {
+func (h *Hdls) FindObjectsNearByCoord(c *fiber.Ctx) error {
 	var (
 		latStr     = c.Query("lat")
 		lonStr     = c.Query("lon")
@@ -182,36 +165,15 @@ func (h *Hdls) FindObjectsNearByCoordAPI(c *fiber.Ctx) error {
 		return h.errorApiRequest(c, fiber.StatusBadRequest, err)
 	}
 
-	var respCities = make([]RespCity, 0, len(cities))
+	var respCities = make([]string, 0, len(cities))
 	for _, city := range cities {
-		respCities = append(respCities, RespCity{
-			city,
-			int(distance.CalcGreatCircle(lat, lon, city.Latitude, city.Longitude)),
-		})
+		dist := distance.CalcGreatCircle(lat, lon, city.Latitude, city.Longitude)
+		respCities = append(respCities, fmt.Sprintf("%s, %s (%d km)", city.Name, city.Country, int(dist)))
 	}
 
-	response := struct {
-		DistanceTo   int        `json:"distance_to"`
-		QtyNearby    int        `json:"qty_nearby"`
-		CitiesNearby []RespCity `json:"cities_nearby"`
-	}{
-		DistanceTo:   dist,
-		QtyNearby:    len(respCities),
-		CitiesNearby: respCities,
-	}
+	response := fmt.Sprintf("There are %d cities at a distance %d km\n", len(respCities), dist)
 
-	return c.JSON(response)
-}
+	response += fmt.Sprintf("List:\n %s", strings.Join(respCities, ", "))
 
-// errorApiRequest performs send status code and message error.
-func (h *Hdls) errorApiRequest(c *fiber.Ctx, code int, err error) error {
-	var errReq = struct {
-		Code    int    `json:"code"`
-		Message string `json:"message"`
-	}{
-		Code:    code,
-		Message: err.Error(),
-	}
-
-	return c.Status(code).JSON(errReq)
+	return c.SendString(response)
 }

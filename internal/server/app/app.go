@@ -100,7 +100,8 @@ func (app *App) RegRouters() {
 	// these routes available only auth user
 	user := v1.Group("/user", app.hdls.CheckAuthentication)
 	user.Get("/distance", app.hdls.CalculateDistance)
-	//user.Get("/cities-area")
+	user.Get("/find-by-name", app.hdls.FindObjectsNearByName)
+	user.Get("/find-by-coord", app.hdls.FindObjectsNearByCoord)
 
 	// api, these routes available only auth user
 	api := v1.Group("/api", app.hdls.CheckAuthentication)
