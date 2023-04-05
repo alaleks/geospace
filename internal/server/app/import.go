@@ -17,6 +17,7 @@ const (
 	jsonFilename = "cities.json"
 )
 
+// CityRaw represents a struct for data from json.
 type CityRaw struct {
 	Name             string   `json:"name"`
 	NameASCII        string   `json:"ascii_name"`
@@ -30,7 +31,7 @@ type CityRaw struct {
 	} `json:"coordinates"`
 }
 
-// import performs transfer data of cities on database.
+// importCities performs transfer data of cities on database.
 func importCities(db *sqlx.DB) error {
 	// if data exists skip import of cities
 	if checkDataCities(db) {
@@ -50,7 +51,10 @@ func importCities(db *sqlx.DB) error {
 	defer a.Close()
 
 	// extract data from archive
-	a.Extract(rootDir + samplePath)
+	_, err = a.Extract(rootDir + samplePath)
+	if err != nil {
+		return err
+	}
 
 	file, err := os.Open(rootDir + samplePath + jsonFilename)
 	if err != nil {
@@ -73,7 +77,10 @@ func importCities(db *sqlx.DB) error {
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`), v.Name, v.NameASCII, strings.Join(v.AlternativeNames, ","),
 			v.CountryCode, v.CountryName, v.Timezone, v.Coordinates.Lat, v.Coordinates.Lon, time.Now().Unix())
 	}
-	tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
 
 	// remove json file
 	os.Remove(rootDir + samplePath + jsonFilename)
@@ -84,9 +91,9 @@ func importCities(db *sqlx.DB) error {
 // checkDataCities performs a check exist data in table cities.
 func checkDataCities(db *sqlx.DB) bool {
 	var res int
-	db.Get(&res, `SELECT COUNT(*) FROM cities`)
+	err := db.Get(&res, `SELECT COUNT(*) FROM cities`)
 
-	if res == 0 {
+	if res == 0 || err != nil {
 		return false
 	}
 

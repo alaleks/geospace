@@ -46,15 +46,16 @@ func New() *App {
 		logger.Fatal(err)
 	}
 
-	// Migrate schemes of tables
+	// migrate schemes of tables
 	db.Migrate()
 
-	// Import data to table
+	// import data to table
 	err = importCities(db.SQLX)
 	if err != nil {
 		logger.Fatal(err)
 	}
 
+	// create server and handlers
 	app.cfg = cfg
 	app.createServer()
 	app.hdls = handlers.New(db, authentication.Init(db, cfg.Secure))
@@ -67,11 +68,13 @@ func (app *App) Run() {
 	// run goroutine for catch os signals for shutdown server.
 	go app.catchSign()
 
-	// Register routes
+	// register routes
 	app.RegRouters()
-	// Use recovery from panic
+
+	// use recovery from panic
 	app.srv.Use(recover.New())
 
+	// listen port
 	err := app.srv.Listen(app.cfg.App.Port)
 	if err != nil {
 		app.logger.Fatal(err)
@@ -80,21 +83,27 @@ func (app *App) Run() {
 
 // RegRouters install routes for the given application.
 func (app *App) RegRouters() {
-	// Ping server
+	// ping server
 	app.srv.Get("/ping", app.hdls.Ping)
+
 	// v1
 	v1 := app.srv.Group("/v1")
-	// Registration for the using application.
-	v1.Post("/register", app.hdls.Register)
-	// Login for the using application.
+	// registration for the using application.
+	v1.Post("/register", app.hdls.SignUp)
+	// login for the using application.
 	v1.Post("/login", app.hdls.Login)
-	// Logout user
+	// logout user
 	v1.Get("/logout", app.hdls.Logout)
-	// These routes available only auth user
+	// get list countries
+	v1.Get("/country", app.hdls.GetCountry)
+
+	// these routes available only auth user
 	user := v1.Group("/user", app.hdls.CheckAuthentication)
-	user.Get("/ping", func(c *fiber.Ctx) error {
-		return c.SendString("OK")
-	})
+	user.Get("/distance", app.hdls.CalculateDistance)
+
+	// api
+	api := v1.Group("/api", app.hdls.CheckAuthentication)
+	api.Get("/distance", app.hdls.CalculateDistanceAPI)
 }
 
 // catchSign will catch SIGINT, SIGHUP, SIGQUIT and SIGTERM and shutdown the server.

@@ -3,6 +3,7 @@ package database
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/alaleks/geospace/internal/server/config"
@@ -13,16 +14,19 @@ import (
 )
 
 const (
-	MaxIdleConns    = 100
-	ConnMaxLifetime = 15 * time.Minute
+	MaxIdleConns    = 100              // maximum number of concurrent connections to the database
+	ConnMaxLifetime = 15 * time.Minute // the maximum length of time a connection can be reused
+	// table names
 	tableNameCities = "cities"
 	tableNameUsers  = "users"
 )
 
+// typical errors
 var (
 	ErrUserAlreadyExists = errors.New("user with current email already exists")
 )
 
+// DB contains pointer to SQLX instance.
 type DB struct {
 	SQLX *sqlx.DB
 }
@@ -34,6 +38,7 @@ func Connect(cfg config.Cfg) (*DB, error) {
 		return nil, err
 	}
 
+	// set params of connection
 	db.SetMaxIdleConns(MaxIdleConns)
 	db.SetConnMaxLifetime(ConnMaxLifetime)
 
@@ -61,8 +66,12 @@ func (db *DB) Close() error {
 // CreateUser performs a create user to database.
 func (db *DB) CreateUser(name, email, password string) (int, error) {
 	var res int
-	db.SQLX.Get(&res, `SELECT COUNT(*) FROM users
+	err := db.SQLX.Get(&res, `SELECT COUNT(*) FROM users
 	WHERE email = ?`, email)
+	if err != nil {
+		return 0, err
+	}
+
 	if res > 0 {
 		return 0, ErrUserAlreadyExists
 	}
@@ -74,9 +83,12 @@ func (db *DB) CreateUser(name, email, password string) (int, error) {
 		CreatedAt: time.Now().Unix(),
 	}
 
-	_, err := db.SQLX.NamedExec(`INSERT INTO users (name, email, password, created_at) 
+	_, err = db.SQLX.NamedExec(`INSERT INTO users (name, email, password, created_at) 
 	VALUES (:name, :email, :password, :created_at)`,
 		&user)
+	if err != nil {
+		return 0, err
+	}
 
 	return user.UID, err
 }
@@ -92,15 +104,41 @@ func (db *DB) GetUser(email string) (models.User, error) {
 	return user, nil
 }
 
+// FindCity provides a get city by name from database.
+func (db *DB) FindCity(cityRaw string) (models.City, error) {
+	var (
+		cityName    string
+		countryName string
+		city        models.City
+	)
+
+	cityRawSplit := strings.Split(cityRaw, ",")
+	if len(cityRawSplit) == 2 {
+		cityName = strings.TrimSpace(cityRawSplit[0])
+		countryName = strings.TrimSpace(cityRawSplit[1])
+	} else {
+		cityName = strings.TrimSpace(cityRaw)
+	}
+
+	err := db.SQLX.Get(&city, `SELECT * FROM cities 
+	WHERE (name = ? OR alternative_names LIKE ?) 
+	AND country LIKE ?;`, cityName, "%"+cityName+",%", countryName+"%")
+	if err != nil {
+		return city, err
+	}
+
+	return city, nil
+}
+
 // checkTableExist checks if the table exists and returns
 // false if it does not exist.
 func (db *DB) checkTableExist(tableName string) bool {
 	var res int
-	db.SQLX.Get(&res, `SELECT COUNT(*) FROM 
+	err := db.SQLX.Get(&res, `SELECT COUNT(*) FROM 
 	INFORMATION_SCHEMA.TABLES 
 	WHERE TABLE_NAME = ?`, tableName)
 
-	if res == 0 {
+	if res == 0 && err != nil {
 		return false
 	}
 

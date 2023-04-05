@@ -10,9 +10,9 @@
 
 # Binaries
 cmd/server/main
-cmd/server/geospace
+cmd/server/server
 cmd/client/main
-cmd/client/geospace
+cmd/client/client
 
 #log
 log/

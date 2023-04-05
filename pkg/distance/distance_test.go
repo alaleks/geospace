@@ -38,7 +38,7 @@ func TestCalcDistance(t *testing.T) {
 	}{
 		{
 			name:     "Calculation of distance to CalcGreatCirlcle",
-			function: distance.CalcGreatCirlcle,
+			function: distance.CalcGreatCircle,
 			city1:    krd,
 			city2:    msk,
 			dist:     1194,
@@ -84,7 +84,7 @@ func BenchmarkCalcDistance(b *testing.B) {
 	b.ResetTimer()
 
 	b.Run("Calculation of distance to CalcGreatCirlcle", func(b *testing.B) {
-		_ = distance.CalcGreatCirlcle(krd.Lat, krd.Lon, msk.Lat, msk.Lon)
+		_ = distance.CalcGreatCircle(krd.Lat, krd.Lon, msk.Lat, msk.Lon)
 	})
 
 	b.ResetTimer()

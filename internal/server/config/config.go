@@ -24,6 +24,7 @@ const (
 )
 
 type (
+	// Cfg contains the configuration of app.
 	Cfg struct {
 		CfgDatabase CfgDatabase `yaml:"database"`
 		App         App         `yaml:"app"`
@@ -39,7 +40,7 @@ type (
 		Port       int    `yaml:"port"`        // Port of the database for TCP connections
 	}
 
-	// Apps contains the params of settings.
+	// App contains the params of settings.
 	App struct {
 		Name       string `yaml:"name"`        // Name of the application
 		Port       string `yaml:"port"`        // Port for running the application
@@ -204,7 +205,10 @@ func (cfg *Cfg) readCfgFile() error {
 
 	// read file to buffer
 	buf := new(bytes.Buffer)
-	buf.ReadFrom(f)
+	_, err = buf.ReadFrom(f)
+	if err != nil {
+		return err
+	}
 
 	// unmarshal config from yaml
 	return yaml.Unmarshal(buf.Bytes(), cfg)
@@ -244,7 +248,7 @@ func (cfg *Cfg) readParamFlags() {
 		dbName   = flag.String("d", "", "Name of the database")
 		dbUser   = flag.String("u", "", "User name of the database")
 		dbPass   = flag.String("p", "", "Password of the database")
-		dbSocket = flag.String("s", "", "Socket for connections database")
+		dbSocket = flag.String("s", "", "Socket of connection to database")
 		dbPort   = flag.Int("t", 0, "Port of the database")
 
 		// optional parameters
