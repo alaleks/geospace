@@ -51,7 +51,7 @@ func Connect(cfg config.Cfg) (*DB, error) {
 	}, nil
 }
 
-// Migrate performs a migration schema of table to database.
+// Migrate performs a create schema of table and need data in database.
 func (db *DB) Migrate() {
 	if !db.checkTableExist(tableCities) {
 		db.SQLX.MustExec(schema.City)
@@ -108,7 +108,7 @@ func (db *DB) GetUser(email string) (models.User, error) {
 	return user, nil
 }
 
-// FindCityConc provides a get city by name from database (concurrently).
+// FindCityConc provides a get city by name from database (for concurrently using).
 func (db *DB) FindCityConc(cityRaw string, chErr chan<- error, cityCh chan<- models.City) {
 	var (
 		cityName    string
@@ -239,5 +239,3 @@ func (db *DB) checkTableExist(tableName string) bool {
 
 	return true
 }
-
-//

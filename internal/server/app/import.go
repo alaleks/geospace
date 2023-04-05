@@ -21,10 +21,10 @@ const (
 type CityRaw struct {
 	Name             string   `json:"name"`
 	NameASCII        string   `json:"ascii_name"`
-	AlternativeNames []string `json:"alternate_names"`
 	CountryCode      string   `json:"country_code"`
 	CountryName      string   `json:"label_en"`
 	Timezone         string   `json:"timezone"`
+	AlternativeNames []string `json:"alternate_names"`
 	Coordinates      struct {
 		Lon float64 `json:"lon"`
 		Lat float64 `json:"lat"`

@@ -24,8 +24,8 @@ func TestCalcDistance(t *testing.T) {
 	}
 
 	tests := []struct {
-		name     string
 		function func(lat1, lon1, lat2, lon2 float64) float64
+		name     string
 		city1    struct {
 			Lat float64
 			Lon float64

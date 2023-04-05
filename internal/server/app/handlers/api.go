@@ -120,10 +120,10 @@ func (h *Hdls) FindObjectsNearByNameAPI(c *fiber.Ctx) error {
 	}
 
 	response := struct {
+		CitiesNearby []RespCity  `json:"cities_nearby"`
 		Departure    models.City `json:"departure"`
 		DistanceTo   int         `json:"distance_to"`
 		QtyNearby    int         `json:"qty_nearby"`
-		CitiesNearby []RespCity  `json:"cities_nearby"`
 	}{
 		Departure:    ciyDeparture,
 		DistanceTo:   dist,
@@ -191,9 +191,9 @@ func (h *Hdls) FindObjectsNearByCoordAPI(c *fiber.Ctx) error {
 	}
 
 	response := struct {
+		CitiesNearby []RespCity `json:"cities_nearby"`
 		DistanceTo   int        `json:"distance_to"`
 		QtyNearby    int        `json:"qty_nearby"`
-		CitiesNearby []RespCity `json:"cities_nearby"`
 	}{
 		DistanceTo:   dist,
 		QtyNearby:    len(respCities),
@@ -206,8 +206,8 @@ func (h *Hdls) FindObjectsNearByCoordAPI(c *fiber.Ctx) error {
 // errorApiRequest performs send status code and message error.
 func (h *Hdls) errorApiRequest(c *fiber.Ctx, code int, err error) error {
 	errReq := struct {
-		Code    int    `json:"code"`
 		Message string `json:"message"`
+		Code    int    `json:"code"`
 	}{
 		Code:    code,
 		Message: err.Error(),
