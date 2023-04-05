@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/alaleks/geospace/pkg/genkey"
 	"github.com/golang-module/dongle"
@@ -158,6 +159,52 @@ func GetRootDir() (string, error) {
 	}
 
 	return rootDir.Name(), nil
+}
+
+// ReadCfgFile perfoms read the config file.
+func ReadCfgFile() (Cfg, error) {
+	var cfg Cfg
+
+	// get root directory
+	rootDir, err := GetRootDir()
+	if err != nil {
+		return cfg, err
+	}
+
+	if strings.HasSuffix(rootDir, "/internal") {
+		rootDir = strings.TrimSuffix(rootDir, "/internal")
+	}
+
+	// create path to cfg dir
+	cfgPath := rootDir + cfgDirName
+
+	// check dir of cfg exists
+	if _, err := os.Stat(cfgPath); os.IsNotExist(err) {
+		return cfg, err
+	}
+
+	// open cfg file
+	f, err := os.Open(cfgPath + cfgFile)
+	if err != nil {
+		return cfg, err
+	}
+
+	defer f.Close()
+
+	// read file to buffer
+	buf := new(bytes.Buffer)
+	_, err = buf.ReadFrom(f)
+	if err != nil {
+		return cfg, err
+	}
+
+	// unmarshal config from yaml
+	err = yaml.Unmarshal(buf.Bytes(), &cfg)
+	if err != nil {
+		return cfg, err
+	}
+
+	return cfg, nil
 }
 
 // validateConfig performs validation of the configuration and

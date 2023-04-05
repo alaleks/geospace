@@ -67,13 +67,13 @@ func (h *Hdls) CalculateDistanceAPI(c *fiber.Ctx) error {
 				continue
 			}
 
-			response.DistanceStraight = int(distance.CalcGreatCircle(
-				response.Departure.Latitude, response.Departure.Longitude,
-				response.Destination.Latitude, response.Destination.Longitude))
-
 			response.DistanceRoad, _ = h.getDistancebyRoad(
 				response.Departure.Longitude, response.Departure.Latitude,
 				response.Destination.Longitude, response.Destination.Latitude)
+
+			response.DistanceStraight = int(distance.CalcGreatCircle(
+				response.Departure.Latitude, response.Departure.Longitude,
+				response.Destination.Latitude, response.Destination.Longitude))
 
 			return c.JSON(response)
 		}
@@ -110,7 +110,7 @@ func (h *Hdls) FindObjectsNearByNameAPI(c *fiber.Ctx) error {
 		return h.errorApiRequest(c, fiber.StatusBadRequest, err)
 	}
 
-	var respCities = make([]RespCity, 0, len(cities))
+	respCities := make([]RespCity, 0, len(cities))
 	for _, city := range cities {
 		respCities = append(respCities, RespCity{
 			city,
@@ -182,7 +182,7 @@ func (h *Hdls) FindObjectsNearByCoordAPI(c *fiber.Ctx) error {
 		return h.errorApiRequest(c, fiber.StatusBadRequest, err)
 	}
 
-	var respCities = make([]RespCity, 0, len(cities))
+	respCities := make([]RespCity, 0, len(cities))
 	for _, city := range cities {
 		respCities = append(respCities, RespCity{
 			city,
@@ -205,7 +205,7 @@ func (h *Hdls) FindObjectsNearByCoordAPI(c *fiber.Ctx) error {
 
 // errorApiRequest performs send status code and message error.
 func (h *Hdls) errorApiRequest(c *fiber.Ctx, code int, err error) error {
-	var errReq = struct {
+	errReq := struct {
 		Code    int    `json:"code"`
 		Message string `json:"message"`
 	}{

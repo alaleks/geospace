@@ -21,7 +21,7 @@ const (
 
 // authentication performs sign up or login to app.
 func (c *Client) authentication() error {
-	var options = [...]string{
+	options := [...]string{
 		commandSignUp,
 		commandLogIn,
 	}
