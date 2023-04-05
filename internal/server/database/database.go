@@ -20,9 +20,9 @@ const (
 	// table names
 	tableCities       = "cities"
 	tableUsers        = "users"
-	oneDegreesInKmLat = 110.574   // km in one degree latitude
-	oneDegreesInKmLon = 111.320   // km in one degree longitude
-	converFact        = 100000000 // number for convert floating point to uint
+	oneDegreesInKmLat = 110.574 // km in one degree latitude
+	oneDegreesInKmLon = 111.320 // km in one degree longitude
+	converFact        = 1000000 // number for convert floating point to uint
 )
 
 // typical errors

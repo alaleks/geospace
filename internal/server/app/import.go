@@ -14,7 +14,7 @@ import (
 const (
 	samplePath   = "/sample/"    // folder containing the sample file for import
 	arhiveName   = "cities.zip"  // name archive of cities
-	jsonFilename = "cities.json" // name file containing cities
+	jsonFilename = "cities.json" // file name containing cities
 )
 
 // CityRaw represents a struct for data from json.

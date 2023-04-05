@@ -37,7 +37,6 @@ func CalcGreatCircle(lat1, lon1, lat2, lon2 float64) float64 {
 	dist := a * earthRaidus
 
 	return dist
-
 }
 
 // CalcHaversine perfoms calculatin the distance

@@ -102,7 +102,7 @@ func (h *Hdls) FindObjectsNearByName(c *fiber.Ctx) error {
 		return h.errorApiRequest(c, fiber.StatusBadRequest, err)
 	}
 
-	var respCities = make([]string, 0, len(cities))
+	respCities := make([]string, 0, len(cities))
 	for _, city := range cities {
 		dist := distance.CalcGreatCircle(ciyDeparture.Latitude, ciyDeparture.Longitude,
 			city.Latitude, city.Longitude)
@@ -165,7 +165,7 @@ func (h *Hdls) FindObjectsNearByCoord(c *fiber.Ctx) error {
 		return h.errorApiRequest(c, fiber.StatusBadRequest, err)
 	}
 
-	var respCities = make([]string, 0, len(cities))
+	respCities := make([]string, 0, len(cities))
 	for _, city := range cities {
 		dist := distance.CalcGreatCircle(lat, lon, city.Latitude, city.Longitude)
 		respCities = append(respCities, fmt.Sprintf("%s, %s (%d km)", city.Name, city.Country, int(dist)))
@@ -173,7 +173,9 @@ func (h *Hdls) FindObjectsNearByCoord(c *fiber.Ctx) error {
 
 	response := fmt.Sprintf("There are %d cities at a distance %d km\n", len(respCities), dist)
 
-	response += fmt.Sprintf("List:\n %s", strings.Join(respCities, ", "))
+	if len(respCities) > 0 {
+		response += fmt.Sprintf("List:\n%s", strings.Join(respCities, ","))
+	}
 
 	return c.SendString(response)
 }

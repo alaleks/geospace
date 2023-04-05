@@ -83,7 +83,6 @@ func (a *Auth) CheckToken(token string) error {
 
 		return []byte(a.secretJWT), nil
 	})
-
 	if err != nil {
 		return err
 	}

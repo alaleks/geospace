@@ -78,7 +78,7 @@ func (h *Hdls) SignUp(c *fiber.Ctx) error {
 		return h.errorBadRequest(c, err)
 	}
 
-	var response = struct {
+	response := struct {
 		Token string `json:"token"`
 	}{
 		Token: token,
@@ -121,7 +121,7 @@ func (h *Hdls) Login(c *fiber.Ctx) error {
 		return h.errorBadRequest(c, err)
 	}
 
-	var response = struct {
+	response := struct {
 		Token string `json:"token"`
 	}{
 		Token: token,
@@ -207,8 +207,8 @@ func (h *Hdls) getDistancebyRoad(lon1, lat1, lon2, lat2 float64) (int, error) {
 	defer cancel()
 
 	var (
-		chErr   = make(chan error, 1)
-		distRaw = make(chan float64, 1)
+		chErr = make(chan error, 1)
+		dist  = make(chan float64, 1)
 	)
 
 	go func() {
@@ -250,7 +250,7 @@ func (h *Hdls) getDistancebyRoad(lon1, lat1, lon2, lat2 float64) (int, error) {
 			return
 		}
 
-		distRaw <- response.Routes[0].Distance
+		dist <- response.Routes[0].Distance
 	}()
 
 	select {
@@ -258,7 +258,7 @@ func (h *Hdls) getDistancebyRoad(lon1, lat1, lon2, lat2 float64) (int, error) {
 		return 0, ctx.Err()
 	case err := <-chErr:
 		return 0, err
-	case result := <-distRaw:
+	case result := <-dist:
 		return int(result / 1000), nil
 	}
 }

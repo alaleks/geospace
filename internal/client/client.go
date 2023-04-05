@@ -78,7 +78,7 @@ func (c *Client) Run() {
 
 functional:
 	for {
-		var commands = [...]string{
+		commands := [...]string{
 			commandCalcDistance,
 			commandFindNearby,
 			commandFindNearbyCoord,
