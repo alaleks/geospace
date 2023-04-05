@@ -27,9 +27,9 @@ const (
 type (
 	// Cfg contains the configuration of app.
 	Cfg struct {
-		CfgDatabase CfgDatabase `yaml:"database"` // settings of database
-		App         App         `yaml:"app"`      // settings of app
-		Secure      Secure      `yaml:"secure"`   // settings of secure
+		Secure      Secure      `yaml:"secure"`
+		CfgDatabase CfgDatabase `yaml:"database"`
+		App         App         `yaml:"app"`
 	}
 
 	// CfgDatabase contains the configuration for a database connection.
@@ -209,6 +209,7 @@ func ReadCfgFile() (Cfg, error) {
 
 // validateConfig performs validation of the configuration and
 // returns error if required config parameters are not valid.
+// This function checks only required parameters.
 func (cfg *Cfg) validateConfig() error {
 	switch {
 	case len(cfg.CfgDatabase.Name) == 0:
@@ -261,7 +262,7 @@ func (cfg *Cfg) readCfgFile() error {
 	return yaml.Unmarshal(buf.Bytes(), cfg)
 }
 
-// readCfgFile performs read configuration from yaml file.
+// createCfgFile performs create configuration yaml file.
 func (cfg *Cfg) createCfgFile() error {
 	// get root directory
 	rootDir, err := GetRootDir()

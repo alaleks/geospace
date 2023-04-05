@@ -84,7 +84,13 @@ go run -ldflags "-X main.Version=v1 -X main.Host=:3000 -X main.Name=geo" main.go
  - /ping - check server health. If server is healthy return 200.
  - /v1/register - provides sign up. 
  
-If is registered successfully returned 200 and access token in format: [Token: Value of token]
+If is registered successfully returned 200:
+
+```
+{
+    "token": "string"
+}
+```
 
 Token need transfer to:
 - Header as parameter Authorization in format [Bearer token]
@@ -94,15 +100,20 @@ Token need transfer to:
  POST application/json
 
  {
-    "name":"Username",
-    "email": "Usermail",
-    "password": "UserPass"
+    "name":"string",
+    "email": "string",
+    "password": "string",
 }
  ```
 - /v1/login - provides log in. 
 
-If is log in successfully returned 200 and access token in format: [Token: Value of token]
+If is log in successfully returned 200:
 
+```
+{
+    "token": "string"
+}
+```
 
 Token need transfer to:
 - Header as parameter Authorization in format [Bearer token]
@@ -112,19 +123,206 @@ Token need transfer to:
  POST application/json
 
 {
-    "email": "Usermail",
-    "password": "UserPass"
+    "email": "string",
+    "password": "string"
 }
 ```
 - /v1/logout - provides log out.
+
+### Client
+
 - /v1/user/distance - provides calculate distance between two points by coordinates.
 
  ```
 GET application/json
 
-http --follow --timeout 3600 GET 'http://localhost:3000/v1/user/distance?departure=Moscow, Ru&destination=Краснодар&Bearer=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2ODAzNDM4ODksInVpZCI6MH0.L_kAIH_8FmrIAwGEkJ4CZU13QOsollvH9Xebufjxfxw' \
+http --follow --timeout 3600 GET 'http://localhost:3000/v1/user/distance?departure=Moscow,Ru&destination=Краснодар&Bearer=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2ODAzNDM4ODksInVpZCI6MH0.L_kAIH_8FmrIAwGEkJ4CZU13QOsollvH9Xebufjxfxw' \
 ```
 Where:
 
-- Departure - city of departure
-- Destination - city of destination
+- departure - city of departure
+- destination - city of destination
+
+- /v1/user/find-by-name - provides find nearest points (cities) by departure city by name
+
+```
+http --follow --timeout 3600 GET 'http://localhost:3000/v1/user/find-by-name?departure=Rome, It&distanceTo=100' \
+ Authorization:'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2ODA5NTQ5NDgsInVpZCI6OH0.rwwfDiJKTf1yzxlG3-JeKvmYu6PVb3HHuVOCguYCNhY'
+```
+
+Where:
+
+- departure - city of departure
+- distanceTo - in what radius (at what distance) to look for cities in km
+
+- /v1/user/find-by-coord - provides find nearest points (cities) from passed coordinates
+
+```
+http --follow --timeout 3600 GET 'http://localhost:3000/v1/user/find-by-coord?lat=43.77925&lon=11.24626&distanceTo=50' \
+ Authorization:'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2ODA5NTQ5NDgsInVpZCI6OH0.rwwfDiJKTf1yzxlG3-JeKvmYu6PVb3HHuVOCguYCNhY'
+```
+
+Where:
+
+- lat - latitude of point
+- lon - longitude of point
+- distanceTo - in what radius (at what distance) to look for cities in km
+
+### Api
+- /v1/api/distance - provides calculate distance between two points by coordinates
+```
+http --follow --timeout 3600 GET 'http://localhost:3000/v1/api/distance?destination=Venice,Italy&departure=Rome,It' \
+Authorization:'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2ODA5NTQ5NDgsInVpZCI6OH0.rwwfDiJKTf1yzxlG3-JeKvmYu6PVb3HHuVOCguYCNhY'
+```
+
+Where:
+
+- departure - city of departure
+- destination - city of destination
+
+Response Error:
+```
+{
+    "message": "string",
+    "code": int
+}
+```
+
+Response Ok:
+```
+{
+    "departure": {
+        "name": "string", // city name
+        "name_ascii": "string", // city name in ASCII
+        "country_code": "string", // country code
+        "country": "Italy", // country name
+        "timezone": "string", // time zone
+        "city_id": int, // city id in database
+        "latitude": float, 
+        "longitude": float,
+    },
+    "destination": {
+        "name": "string", // city name
+        "name_ascii": "string", // city name in ASCII
+        "country_code": "string", // country code
+        "country": "Italy", // country name
+        "timezone": "string", // time zone
+        "city_id": int, // city id in database
+        "latitude": float, 
+        "longitude": float,
+    },
+    "distance_straight": int, // distance between two city in straight line
+    "distance_road":int // distance between two city by road
+}
+```
+
+- /v1/api/find-by-name - provides find nearest points (cities) by departure city by name
+
+```
+http --follow --timeout 3600 GET 'http://localhost:3000/v1/api/find-by-name?departure=Rome, It&distanceTo=100' \
+Authorization:'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2ODA5NTQ5NDgsInVpZCI6OH0.rwwfDiJKTf1yzxlG3-JeKvmYu6PVb3HHuVOCguYCNhY'
+ ```
+
+ Where:
+
+- departure - city of departure
+- distanceTo - in what radius (at what distance) to look for cities in km
+
+Response Error:
+```
+{
+    "message": "string",
+    "code": int
+}
+```
+
+Response Ok:
+```
+{
+   "cities_nearby": [
+        {
+            "name": "string", // city name
+            "name_ascii": "string", // city name in ASCII
+            "country_code": "string", // country code
+            "country": "Italy", // country name
+            "timezone": "string", // time zone
+            "city_id": int, // city id in database
+            "latitude": float, 
+            "longitude": float,
+        },
+        {
+            "name": "string", // city name
+            "name_ascii": "string", // city name in ASCII
+            "country_code": "string", // country code
+            "country": "Italy", // country name
+            "timezone": "string", // time zone
+            "city_id": int, // city id in database
+            "latitude": float, 
+            "longitude": float,
+        }
+   ]
+    "departure": {
+        "name": "string", // city name
+        "name_ascii": "string", // city name in ASCII
+        "country_code": "string", // country code
+        "country": "Italy", // country name
+        "timezone": "string", // time zone
+        "city_id": int, // city id in database
+        "latitude": float, 
+        "longitude": float,
+    },
+    "distance_to": int, // in what radius (at what distance) to look for cities in km
+    "qty_nearby": int // number of cities in response
+}
+```
+
+- /v1/api/find-by-coord - provides find nearest points (cities) from passed coordinates 
+
+```
+http --follow --timeout 3600 GET 'http://localhost:3000/v1/api/find-by-coord?lat=43.77925&lon=11.24626&distanceTo=50' \
+Authorization:'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2ODA5NTQ5NDgsInVpZCI6OH0.rwwfDiJKTf1yzxlG3-JeKvmYu6PVb3HHuVOCguYCNhY'
+```
+
+Where:
+
+- lat - latitude of point
+- lon - longitude of point
+- distanceTo - in what radius (at what distance) to look for cities in km
+
+Response Error:
+```
+{
+    "message": "string",
+    "code": int
+}
+```
+
+Response Ok:
+```
+{
+   "cities_nearby": [
+        {
+            "name": "string", // city name
+            "name_ascii": "string", // city name in ASCII
+            "country_code": "string", // country code
+            "country": "Italy", // country name
+            "timezone": "string", // time zone
+            "city_id": int, // city id in database
+            "latitude": float, 
+            "longitude": float,
+        },
+        {
+            "name": "string", // city name
+            "name_ascii": "string", // city name in ASCII
+            "country_code": "string", // country code
+            "country": "Italy", // country name
+            "timezone": "string", // time zone
+            "city_id": int, // city id in database
+            "latitude": float, 
+            "longitude": float,
+        }
+   ]
+    "distance_to": int, // in what radius (at what distance) to look for cities in km
+    "qty_nearby": int // number of cities in response
+}
+```

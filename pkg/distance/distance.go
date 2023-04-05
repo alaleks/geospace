@@ -63,6 +63,6 @@ func CalcHaversine(lat1, lon1, lat2, lon2 float64) float64 {
 }
 
 // degreesToRadians perfoms convert degrees to radians.
-func degreesToRadians(d float64) float64 {
-	return d * math.Pi / 180
+func degreesToRadians(degrees float64) float64 {
+	return degrees * math.Pi / 180
 }
