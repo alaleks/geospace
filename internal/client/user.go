@@ -15,8 +15,8 @@ var (
 )
 
 const (
-	commandLogIn  = "log in"
-	commandSignUp = "sign up"
+	commandLogIn  = "login"
+	commandSignUp = "signup"
 )
 
 // authentication performs sign up or login to app.
@@ -50,21 +50,21 @@ func (c *Client) signUp() error {
 		Email    string `json:"email"`
 	}
 
-	email, err := inputWithReslult("email*")
+	email, err := inputWithResult("email*")
 	if err != nil {
 		return err
 	}
 
 	user.Email = email
 
-	name, err := inputWithReslult("name")
+	name, err := inputWithResult("name")
 	if err != nil {
 		return err
 	}
 
 	user.Name = name
 
-	password, err := inputWithReslult("password*")
+	password, err := inputWithResult("password*")
 	if err != nil {
 		return err
 	}
@@ -112,14 +112,14 @@ func (c *Client) login() error {
 		Password string `json:"password"`
 	}
 
-	email, err := inputWithReslult("email*")
+	email, err := inputWithResult("email*")
 	if err != nil {
 		return err
 	}
 
 	user.Email = email
 
-	password, err := inputWithReslult("password*")
+	password, err := inputWithResult("password*")
 	if err != nil {
 		return err
 	}

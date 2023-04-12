@@ -9,12 +9,12 @@ import (
 
 // calcDistance provides capability of calculate distance between two cities.
 func (c *Client) calcDistance() error {
-	departure, err := inputWithReslult("Departure  city*")
+	departure, err := inputWithResult("Departure  city*")
 	if err != nil {
 		return err
 	}
 
-	destination, err := inputWithReslult("Destination city*")
+	destination, err := inputWithResult("Destination city*")
 	if err != nil {
 		return err
 	}
@@ -30,7 +30,11 @@ func (c *Client) calcDistance() error {
 		return err
 	}
 
-	code, body, _ := c.Agent.Bytes()
+	code, body, errs := c.Agent.Bytes()
+	if len(errs) > 0 {
+		return fmt.Errorf("%v", errs)
+	}
+
 	if code != 200 {
 		return fmt.Errorf(string(body))
 	}
@@ -40,14 +44,14 @@ func (c *Client) calcDistance() error {
 	return nil
 }
 
-// getNearbyCities provides capability of get nearby cities.
-func (c *Client) getNearbyCities() error {
-	departure, err := inputWithReslult("Departure  city*")
+// getNearbyCitiesbyName provides capability of get nearby cities.
+func (c *Client) getNearbyCitiesbyName() error {
+	departure, err := inputWithResult("Departure  city*")
 	if err != nil {
 		return err
 	}
 
-	distanceTo, err := inputWithReslult("Distance to (in km)*")
+	distanceTo, err := inputWithResult("Distance to (in km)*")
 	if err != nil {
 		return err
 	}
@@ -63,7 +67,11 @@ func (c *Client) getNearbyCities() error {
 		return err
 	}
 
-	code, body, _ := c.Agent.Bytes()
+	code, body, errs := c.Agent.Bytes()
+	if len(errs) > 0 {
+		return fmt.Errorf("%v", errs)
+	}
+
 	if code != 200 {
 		return fmt.Errorf(string(body))
 	}
@@ -75,17 +83,17 @@ func (c *Client) getNearbyCities() error {
 
 // getNearbyCitiesbyCoord provides capability of get nearby cities by coordinates.
 func (c *Client) getNearbyCitiesbyCoord() error {
-	lat, err := inputWithReslult("Latitude, decimal number*")
+	lat, err := inputWithResult("Latitude, decimal number*")
 	if err != nil {
 		return err
 	}
 
-	lon, err := inputWithReslult("Longitude, decimal number*")
+	lon, err := inputWithResult("Longitude, decimal number*")
 	if err != nil {
 		return err
 	}
 
-	distanceTo, err := inputWithReslult("Distance to (in km)*")
+	distanceTo, err := inputWithResult("Distance to (in km)*")
 	if err != nil {
 		return err
 	}
@@ -102,7 +110,11 @@ func (c *Client) getNearbyCitiesbyCoord() error {
 		return err
 	}
 
-	code, body, _ := c.Agent.Bytes()
+	code, body, errs := c.Agent.Bytes()
+	if len(errs) > 0 {
+		return fmt.Errorf("%v", errs)
+	}
+
 	if code != 200 {
 		return fmt.Errorf(string(body))
 	}

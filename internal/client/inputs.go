@@ -2,9 +2,9 @@ package client
 
 import "github.com/pterm/pterm"
 
-// inputWithReslult creates a new input in command line
+// inputWithResult creates a new input in command line
 // and returns result string and error.
-func inputWithReslult(label string) (string, error) {
+func inputWithResult(label string) (string, error) {
 	input := pterm.DefaultInteractiveTextInput
 	input.DefaultText = label
 	result, err := input.Show()

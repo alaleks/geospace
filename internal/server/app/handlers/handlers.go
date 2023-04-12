@@ -14,6 +14,10 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+const (
+	timeoutOSM = 500 * time.Millisecond
+)
+
 // typical errors
 var (
 	ErrUserNotExists         = errors.New("user with current email does not exist")
@@ -203,7 +207,7 @@ func (h *Hdls) getDistancebyRoad(lon1, lat1, lon2, lat2 float64) (int, error) {
 	url := fmt.Sprintf("http://router.project-osrm.org/route/v1/driving/%f,%f;%f,%f?overview=false",
 		lon1, lat1, lon2, lat2)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), timeoutOSM)
 	defer cancel()
 
 	var (

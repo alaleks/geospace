@@ -13,11 +13,14 @@ import (
 )
 
 const (
-	contentTypeJSON        = "application/json"
-	commandCalcDistance    = "calculate distance"
-	commandFindNearby      = "find nearby cities"
-	commandFindNearbyCoord = "find nearby cities by coordinate"
-	commandExit            = "exit"
+	contentTypeJSON                 = "application/json"
+	commandDistance                 = "distance"
+	commandCalculate                = "calculate"
+	commandCities                   = "cities"
+	commandCitiesNearbybyName       = "nearby by Name"
+	commandCitiesNearbybyCoordinate = "nearby by Coordinate"
+	commandBack                     = "back"
+	commandExit                     = "exit"
 )
 
 // typical errors
@@ -66,7 +69,7 @@ func (c *Client) Run() {
 		err := c.authentication()
 		if err != nil {
 			printErr(err)
-			howExit()
+			printExitMessage()
 
 			continue
 		}
@@ -74,51 +77,114 @@ func (c *Client) Run() {
 		break
 	}
 
-	howExit()
+	printExitMessage()
 
-functional:
+	// create commands
+	commandsMainMenu := [...]string{
+		commandDistance,
+		commandCities,
+		commandExit,
+	}
+
+	commandsMenuDistance := [...]string{
+		commandCalculate,
+		commandBack,
+		commandExit,
+	}
+
+	commandsMenuCities := [...]string{
+		commandCitiesNearbybyName,
+		commandCitiesNearbybyCoordinate,
+		commandBack,
+		commandExit,
+	}
+
+mainMenu:
 	for {
-		commands := [...]string{
-			commandCalcDistance,
-			commandFindNearby,
-			commandFindNearbyCoord,
-			commandExit,
-		}
-
-		printer := pterm.DefaultInteractiveSelect.WithOptions(commands[:])
+		printer := pterm.DefaultInteractiveSelect.WithOptions(commandsMainMenu[:])
 		selectedOptions, err := printer.Show()
 		if err != nil {
 			printErr(err)
 
-			break functional
+			break mainMenu
 		}
 
 		switch selectedOptions {
-		case commandCalcDistance:
-			err = c.calcDistance()
-			if err != nil {
-				printErr(err)
-			}
+		case commandDistance:
+		distance:
+			for {
+				printer = pterm.DefaultInteractiveSelect.WithOptions(commandsMenuDistance[:])
+				selectedOptions, err = printer.Show()
+				if err != nil {
+					printErr(err)
 
-			continue
-		case commandFindNearby:
-			err = c.getNearbyCities()
-			if err != nil {
-				printErr(err)
-			}
+					break distance
+				}
 
-			continue
-		case commandFindNearbyCoord:
-			err = c.getNearbyCitiesbyCoord()
-			if err != nil {
-				printErr(err)
-			}
+				switch selectedOptions {
+				case commandCalculate:
+					err = c.calcDistance()
+					if err != nil {
+						printErr(err)
+					}
+				case commandBack:
+					pterm.Info.Println("return to the main menu")
 
-			continue
+					break distance
+				case commandExit:
+					pterm.Info.Println("client closed")
+
+					break mainMenu
+				default:
+					printErrWithExit(ErrInvalidCommand)
+
+					break mainMenu
+				}
+			}
+		case commandCities:
+		cities:
+			for {
+				printer = pterm.DefaultInteractiveSelect.WithOptions(commandsMenuCities[:])
+				selectedOptions, err = printer.Show()
+				if err != nil {
+					printErr(err)
+
+					break cities
+				}
+
+				switch selectedOptions {
+				case commandCitiesNearbybyName:
+					err = c.getNearbyCitiesbyName()
+					if err != nil {
+						printErr(err)
+					}
+
+					continue
+				case commandCitiesNearbybyCoordinate:
+					err = c.getNearbyCitiesbyCoord()
+					if err != nil {
+						printErr(err)
+					}
+
+					continue
+				case commandBack:
+					pterm.Info.Println("return to the main menu")
+
+					break cities
+				case commandExit:
+					pterm.Info.Println("client closed")
+
+					break mainMenu
+				default:
+					printErrWithExit(ErrInvalidCommand)
+
+					break mainMenu
+				}
+			}
 		case commandExit:
 			pterm.Info.Println("client closed")
 
-			break functional
+			break mainMenu
 		default:
 			printErrWithExit(ErrInvalidCommand)
 		}
@@ -140,7 +206,7 @@ func (c *Client) checkServer() error {
 		return ErrServerInternal
 	}
 
-	howExit()
+	printExitMessage()
 
 	return nil
 }
@@ -158,8 +224,8 @@ func (c *Client) greet() {
 	pterm.DefaultCenter.WithCenterEachLineSeparately().Println(c.Version)
 }
 
-// howExit displays message how to exit the client.
-func howExit() {
+// printExitMessage displays message how to exit the client.
+func printExitMessage() {
 	pterm.DefaultCenter.WithCenterEachLineSeparately().
 		Println("press ctrl + c to exit")
 }
