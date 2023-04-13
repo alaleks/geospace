@@ -86,31 +86,30 @@ func (c *Client) Run() {
 		commandExit,
 	}
 
-mainMenu:
 	for {
 		printer := pterm.DefaultInteractiveSelect.WithOptions(commandsMainMenu[:])
 		selectedOptions, err := printer.Show()
 		if err != nil {
 			printErr(err)
 
-			break mainMenu
+			break
 		}
 
 		switch selectedOptions {
 		case commandDistance:
 			checkExit := c.distance()
 			if checkExit {
-				break mainMenu
+				break
 			}
 		case commandCities:
 			checkExit := c.cities()
 			if checkExit {
-				break mainMenu
+				break
 			}
 		case commandExit:
 			pterm.Info.Println("client closed")
 
-			break mainMenu
+			break
 		default:
 			printErrWithExit(ErrInvalidCommand)
 		}

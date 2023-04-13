@@ -59,7 +59,7 @@ func (h *Hdls) CalculateDistanceAPI(c *fiber.Ctx) error {
 	var n atomic.Int64
 
 	for {
-		if n.Load() == 2 {
+		if n.Load() == counterDoneJob {
 			break
 		}
 

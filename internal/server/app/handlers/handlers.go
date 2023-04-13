@@ -15,7 +15,8 @@ import (
 )
 
 const (
-	timeout = 500 * time.Millisecond
+	timeout        = 500 * time.Millisecond
+	counterDoneJob = 2
 )
 
 // typical errors
