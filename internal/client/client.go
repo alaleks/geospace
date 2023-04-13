@@ -86,12 +86,82 @@ func (c *Client) Run() {
 		commandExit,
 	}
 
+	for {
+		printer := pterm.DefaultInteractiveSelect.WithOptions(commandsMainMenu[:])
+		selectedOptions, err := printer.Show()
+		if err != nil {
+			printErr(err)
+
+			break
+		}
+
+		switch selectedOptions {
+		case commandDistance:
+			checkExit := c.distance()
+			if checkExit {
+				break
+			}
+		case commandCities:
+			checkExit := c.cities()
+			if checkExit {
+				break
+			}
+		case commandExit:
+			pterm.Info.Println("client closed")
+
+			break
+		default:
+			printErrWithExit(ErrInvalidCommand)
+		}
+	}
+}
+
+// distance is the wrapper function for calculate distance between two cities.
+// If this function returns true, need exit from client.
+// If false, need continue using client.
+func (c *Client) distance() bool {
 	commandsMenuDistance := [...]string{
 		commandCalculate,
 		commandBack,
 		commandExit,
 	}
 
+	for {
+		printer := pterm.DefaultInteractiveSelect.WithOptions(commandsMenuDistance[:])
+		selectedOptions, err := printer.Show()
+		if err != nil {
+			printErr(err)
+
+			return false
+		}
+
+		switch selectedOptions {
+		case commandCalculate:
+			err = c.calcDistance()
+			if err != nil {
+				printErr(err)
+			}
+		case commandBack:
+			pterm.Info.Println("return to the main menu")
+
+			return false
+		case commandExit:
+			pterm.Info.Println("client closed")
+
+			return true
+		default:
+			printErr(ErrInvalidCommand)
+
+			return false
+		}
+	}
+}
+
+// cities is the wrapper function for the find nearby of the cities
+// from current city by Name or by Coordinate point.
+// If this function returns true, need exit from client.
+// If false, need continue using client.
+func (c *Client) cities() bool {
 	commandsMenuCities := [...]string{
 		commandCitiesNearbybyName,
 		commandCitiesNearbybyCoordinate,
@@ -99,94 +169,38 @@ func (c *Client) Run() {
 		commandExit,
 	}
 
-mainMenu:
 	for {
-		printer := pterm.DefaultInteractiveSelect.WithOptions(commandsMainMenu[:])
+		printer := pterm.DefaultInteractiveSelect.WithOptions(commandsMenuCities[:])
 		selectedOptions, err := printer.Show()
 		if err != nil {
 			printErr(err)
 
-			break mainMenu
+			return false
 		}
 
 		switch selectedOptions {
-		case commandDistance:
-		distance:
-			for {
-				printer = pterm.DefaultInteractiveSelect.WithOptions(commandsMenuDistance[:])
-				selectedOptions, err = printer.Show()
-				if err != nil {
-					printErr(err)
-
-					break distance
-				}
-
-				switch selectedOptions {
-				case commandCalculate:
-					err = c.calcDistance()
-					if err != nil {
-						printErr(err)
-					}
-				case commandBack:
-					pterm.Info.Println("return to the main menu")
-
-					break distance
-				case commandExit:
-					pterm.Info.Println("client closed")
-
-					break mainMenu
-				default:
-					printErrWithExit(ErrInvalidCommand)
-
-					break mainMenu
-				}
+		case commandCitiesNearbybyName:
+			err = c.getNearbyCitiesbyName()
+			if err != nil {
+				printErr(err)
 			}
-		case commandCities:
-		cities:
-			for {
-				printer = pterm.DefaultInteractiveSelect.WithOptions(commandsMenuCities[:])
-				selectedOptions, err = printer.Show()
-				if err != nil {
-					printErr(err)
-
-					break cities
-				}
-
-				switch selectedOptions {
-				case commandCitiesNearbybyName:
-					err = c.getNearbyCitiesbyName()
-					if err != nil {
-						printErr(err)
-					}
-
-					continue
-				case commandCitiesNearbybyCoordinate:
-					err = c.getNearbyCitiesbyCoord()
-					if err != nil {
-						printErr(err)
-					}
-
-					continue
-				case commandBack:
-					pterm.Info.Println("return to the main menu")
-
-					break cities
-				case commandExit:
-					pterm.Info.Println("client closed")
-
-					break mainMenu
-				default:
-					printErrWithExit(ErrInvalidCommand)
-
-					break mainMenu
-				}
+		case commandCitiesNearbybyCoordinate:
+			err = c.getNearbyCitiesbyCoord()
+			if err != nil {
+				printErr(err)
 			}
+		case commandBack:
+			pterm.Info.Println("return to the main menu")
+
+			return false
 		case commandExit:
 			pterm.Info.Println("client closed")
 
-			break mainMenu
+			return true
 		default:
-			printErrWithExit(ErrInvalidCommand)
+			printErr(ErrInvalidCommand)
+
+			return false
 		}
 	}
 }

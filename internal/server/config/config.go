@@ -171,9 +171,7 @@ func ReadCfgFile() (Cfg, error) {
 		return cfg, err
 	}
 
-	if strings.HasSuffix(rootDir, "/internal") {
-		rootDir = strings.TrimSuffix(rootDir, "/internal")
-	}
+	rootDir = strings.TrimSuffix(rootDir, "/internal")
 
 	// create path to cfg dir
 	cfgPath := rootDir + cfgDirName

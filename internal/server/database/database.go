@@ -18,8 +18,9 @@ const (
 	MaxIdleConns    = 100              // maximum number of concurrent connections to the database
 	ConnMaxLifetime = 15 * time.Minute // the maximum length of time a connection can be reused
 	// table names
-	tableCities       = "cities"
-	tableUsers        = "users"
+	tableCities = "cities"
+	tableUsers  = "users"
+	// convert values
 	oneDegreesInKmLat = 110.574 // km in one degree latitude
 	oneDegreesInKmLon = 111.320 // km in one degree longitude
 	converFact        = 1000000 // number for convert floating point to uint

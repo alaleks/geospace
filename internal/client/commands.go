@@ -7,6 +7,14 @@ import (
 	"github.com/pterm/pterm"
 )
 
+const (
+	prefixToken             = "Bearer "
+	authenticationHeaderKey = "Authorization"
+	urlDistance             = "/v1/user/distance"
+	urlFindByName           = "/v1/user/find-by-name"
+	urlFindByCoord          = "/v1/user/find-by-coord"
+)
+
 // calcDistance provides capability of calculate distance between two cities.
 func (c *Client) calcDistance() error {
 	departure, err := inputWithResult("Departure  city*")
@@ -21,8 +29,8 @@ func (c *Client) calcDistance() error {
 
 	req := c.Agent.Request()
 	req.Header.SetMethod(fiber.MethodGet)
-	req.Header.Add("Authorization", "Bearer "+c.Token)
-	req.SetRequestURI(c.Host + "/v1/user/distance")
+	req.Header.Add(authenticationHeaderKey, prefixToken+c.Token)
+	req.SetRequestURI(c.Host + urlDistance)
 	req.URI().QueryArgs().Add("departure", departure)
 	req.URI().QueryArgs().Add("destination", destination)
 
@@ -58,8 +66,8 @@ func (c *Client) getNearbyCitiesbyName() error {
 
 	req := c.Agent.Request()
 	req.Header.SetMethod(fiber.MethodGet)
-	req.Header.Add("Authorization", "Bearer "+c.Token)
-	req.SetRequestURI(c.Host + "/v1/user/find-by-name")
+	req.Header.Add(authenticationHeaderKey, prefixToken+c.Token)
+	req.SetRequestURI(c.Host + urlFindByName)
 	req.URI().QueryArgs().Add("departure", departure)
 	req.URI().QueryArgs().Add("distanceTo", distanceTo)
 
@@ -100,8 +108,8 @@ func (c *Client) getNearbyCitiesbyCoord() error {
 
 	req := c.Agent.Request()
 	req.Header.SetMethod(fiber.MethodGet)
-	req.Header.Add("Authorization", "Bearer "+c.Token)
-	req.SetRequestURI(c.Host + "/v1/user/find-by-coord")
+	req.Header.Add(authenticationHeaderKey, prefixToken+c.Token)
+	req.SetRequestURI(c.Host + urlFindByCoord)
 	req.URI().QueryArgs().Add("lat", lat)
 	req.URI().QueryArgs().Add("lon", lon)
 	req.URI().QueryArgs().Add("distanceTo", distanceTo)

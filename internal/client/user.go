@@ -17,6 +17,8 @@ var (
 const (
 	commandLogIn  = "login"
 	commandSignUp = "signup"
+	urlSignUp     = "/v1/signup"
+	urlLogin      = "/v1/login"
 )
 
 // authentication performs sign up or login to app.
@@ -80,7 +82,7 @@ func (c *Client) signUp() error {
 	req.SetBody(data)
 	req.Header.SetMethod(fiber.MethodPost)
 	req.Header.SetContentType(contentTypeJSON)
-	req.SetRequestURI(c.Host + "/v1/register")
+	req.SetRequestURI(c.Host + urlSignUp)
 
 	if err := c.Agent.Parse(); err != nil {
 		return err
@@ -135,7 +137,7 @@ func (c *Client) login() error {
 	req.SetBody(data)
 	req.Header.SetMethod(fiber.MethodPost)
 	req.Header.SetContentType(contentTypeJSON)
-	req.SetRequestURI(c.Host + "/v1/login")
+	req.SetRequestURI(c.Host + urlLogin)
 
 	if err := c.Agent.Parse(); err != nil {
 		return err

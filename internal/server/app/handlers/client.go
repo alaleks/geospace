@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync/atomic"
+	"time"
 
 	"github.com/alaleks/geospace/internal/server/database/models"
 	"github.com/alaleks/geospace/pkg/distance"
@@ -12,17 +14,15 @@ import (
 
 // CalculateDistance performs a distance between two cities.
 func (h *Hdls) CalculateDistance(c *fiber.Ctx) error {
-	var (
-		departure   = c.Query("departure")
-		destination = c.Query("destination")
-	)
+	departure := strings.TrimSpace(c.Query("departure"))
+	destination := strings.TrimSpace(c.Query("destination"))
 
-	if strings.TrimSpace(departure) == "" {
+	if departure == "" {
 		err := fmt.Errorf("departure %v", ErrEmptyParam)
 		return h.errorApiRequest(c, fiber.StatusBadRequest, err)
 	}
 
-	if strings.TrimSpace(destination) == "" {
+	if destination == "" {
 		err := fmt.Errorf("destination %v", ErrEmptyParam)
 		return h.errorApiRequest(c, fiber.StatusBadRequest, err)
 	}
@@ -40,37 +40,45 @@ func (h *Hdls) CalculateDistance(c *fiber.Ctx) error {
 	go h.db.FindCityConc(departure, chErr, cityDepartureCh)
 	go h.db.FindCityConc(destination, chErr, cityDestinationCh)
 
+	// in cycle will be wait when search is done
+	// at the error, immediately return the request error
+	var n atomic.Int64
+
 	for {
+		if n.Load() == counterDoneJob {
+			break
+		}
+
 		select {
 		case err := <-chErr:
 			err = fmt.Errorf("error find city in db: %v", err)
 			return h.errorApiRequest(c, fiber.StatusBadRequest, err)
 		case cityDeparture = <-cityDepartureCh:
-			continue
+			n.Add(1)
 		case cityDestination = <-cityDestinationCh:
-			continue
-		default:
-			if cityDeparture == (models.City{}) || cityDestination == (models.City{}) {
-				continue
-			}
-
-			distStraight = int(distance.CalcGreatCircle(
-				cityDeparture.Latitude, cityDeparture.Longitude,
-				cityDestination.Latitude, cityDestination.Longitude))
-
-			response := fmt.Sprintf("distance between %s, %s and %s, %s by straight line %d km",
-				cityDeparture.Name, cityDeparture.Country,
-				cityDestination.Name, cityDestination.Country, distStraight)
-
-			distanceRoad, err := h.getDistancebyRoad(cityDeparture.Longitude, cityDeparture.Latitude,
-				cityDestination.Longitude, cityDestination.Latitude)
-			if err == nil || distanceRoad != 0 {
-				response += fmt.Sprintf(" / by road %d km", distanceRoad)
-			}
-
-			return c.SendString(response)
+			n.Add(1)
+		case <-time.After(timeout):
+			break
 		}
 	}
+
+	distStraight = int(distance.CalcGreatCircle(
+		cityDeparture.Latitude, cityDeparture.Longitude,
+		cityDestination.Latitude, cityDestination.Longitude))
+
+	response := fmt.Sprintf("distance between %s, %s and %s, %s by straight line %d km",
+		cityDeparture.Name, cityDeparture.Country,
+		cityDestination.Name, cityDestination.Country, distStraight)
+
+	// here wait no more than 500 ms, if api OSM does not respond or responds long,
+	// then return the distance in a straight line
+	distanceRoad, err := h.getDistancebyRoad(cityDeparture.Longitude, cityDeparture.Latitude,
+		cityDestination.Longitude, cityDestination.Latitude)
+	if err == nil || distanceRoad != 0 {
+		response += fmt.Sprintf(" / by road %d km", distanceRoad)
+	}
+
+	return c.SendString(response)
 }
 
 // FindObjectsNearByName performs search for all objects at a distance
@@ -120,40 +128,31 @@ func (h *Hdls) FindObjectsNearByName(c *fiber.Ctx) error {
 // FindObjectsNearByCoord performs search for all objects at a distance
 // until n km from coordinates passed in the query.
 func (h *Hdls) FindObjectsNearByCoord(c *fiber.Ctx) error {
-	var (
-		latStr     = c.Query("lat")
-		lonStr     = c.Query("lon")
-		distanceTo = c.Query("distanceTo")
-	)
-
-	if strings.TrimSpace(distanceTo) == "" {
+	switch {
+	case strings.TrimSpace(c.Query("distanceTo")) == "":
 		err := fmt.Errorf("distanceTo %v", ErrEmptyParam)
 		return h.errorApiRequest(c, fiber.StatusBadRequest, err)
-	}
-
-	if strings.TrimSpace(latStr) == "" {
+	case strings.TrimSpace(c.Query("lat")) == "":
 		err := fmt.Errorf("lat %v", ErrEmptyParam)
 		return h.errorApiRequest(c, fiber.StatusBadRequest, err)
-	}
-
-	if strings.TrimSpace(lonStr) == "" {
+	case strings.TrimSpace(c.Query("lon")) == "":
 		err := fmt.Errorf("lon %v", ErrEmptyParam)
 		return h.errorApiRequest(c, fiber.StatusBadRequest, err)
 	}
 
-	dist, err := strconv.Atoi(distanceTo)
+	dist, err := strconv.Atoi(c.Query("distanceTo"))
 	if err != nil {
 		err = fmt.Errorf("error convert distance to int: %v", err)
 		return h.errorApiRequest(c, fiber.StatusBadRequest, err)
 	}
 
-	lat, err := strconv.ParseFloat(latStr, 64)
+	lat, err := strconv.ParseFloat(c.Query("lat"), 64)
 	if err != nil {
 		err = fmt.Errorf("error convert lat to decimal number: %v", err)
 		return h.errorApiRequest(c, fiber.StatusBadRequest, err)
 	}
 
-	lon, err := strconv.ParseFloat(lonStr, 64)
+	lon, err := strconv.ParseFloat(c.Query("lon"), 64)
 	if err != nil {
 		err = fmt.Errorf("error convert lon to decimal number: %v", err)
 		return h.errorApiRequest(c, fiber.StatusBadRequest, err)
