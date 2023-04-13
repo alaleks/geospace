@@ -31,6 +31,7 @@ type Auth struct {
 
 // Init performs initialization pointer of the Auth instance.
 func Init(db *database.DB, cfgSecure config.Secure) *Auth {
+	// create cipher for auth
 	cipher := dongle.NewCipher()
 	cipher.SetMode(dongle.CBC)              // CBC、CFB、OFB、CTR、ECB
 	cipher.SetPadding(dongle.PKCS7)         // No、Empty、Zero、PKCS5、PKCS7、AnsiX923、ISO97971

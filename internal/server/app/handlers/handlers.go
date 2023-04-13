@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	timeoutOSM = 500 * time.Millisecond
+	timeout = 500 * time.Millisecond
 )
 
 // typical errors
@@ -207,7 +207,7 @@ func (h *Hdls) getDistancebyRoad(lon1, lat1, lon2, lat2 float64) (int, error) {
 	url := fmt.Sprintf("http://router.project-osrm.org/route/v1/driving/%f,%f;%f,%f?overview=false",
 		lon1, lat1, lon2, lat2)
 
-	ctx, cancel := context.WithTimeout(context.Background(), timeoutOSM)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	var (

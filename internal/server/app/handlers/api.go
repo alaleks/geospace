@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync/atomic"
+	"time"
 
 	"github.com/alaleks/geospace/internal/server/database/models"
 	"github.com/alaleks/geospace/pkg/distance"
@@ -17,67 +19,74 @@ type RespCity struct {
 	Distance int `json:"distance"`
 }
 
+// RespDistance represents a data for response
+// for requesting calculation of distance.
+type RespDistance struct {
+	Departure        models.City `json:"departure"`
+	Destination      models.City `json:"destination"`
+	DistanceStraight int         `json:"distance_straight"`
+	DistanceRoad     int         `json:"distance_road,omitempty"`
+}
+
 // CalculateDistanceAPI performs a distance between two cities.
 func (h *Hdls) CalculateDistanceAPI(c *fiber.Ctx) error {
-	var (
-		departure   = c.Query("departure")
-		destination = c.Query("destination")
-	)
+	departure := strings.TrimSpace(c.Query("departure"))
+	destination := strings.TrimSpace(c.Query("destination"))
 
-	if strings.TrimSpace(departure) == "" {
+	if departure == "" {
 		err := fmt.Errorf("departure %v", ErrEmptyParam)
 		return h.errorApiRequest(c, fiber.StatusBadRequest, err)
 	}
 
-	if strings.TrimSpace(destination) == "" {
+	if destination == "" {
 		err := fmt.Errorf("destination %v", ErrEmptyParam)
 		return h.errorApiRequest(c, fiber.StatusBadRequest, err)
 	}
 
 	var (
-		response struct {
-			Departure        models.City `json:"departure"`
-			Destination      models.City `json:"destination"`
-			DistanceStraight int         `json:"distance_straight"`
-			DistanceRoad     int         `json:"distance_road,omitempty"`
-		}
+		response          RespDistance
 		chErr             = make(chan error, 1)
 		cityDepartureCh   = make(chan models.City, 1)
 		cityDestinationCh = make(chan models.City, 1)
 	)
 
-	// run concurrently findind
+	// run concurrently search in database
 	go h.db.FindCityConc(departure, chErr, cityDepartureCh)
 	go h.db.FindCityConc(destination, chErr, cityDestinationCh)
 
 	// in cycle will be wait when search is done
 	// at the error, immediately return the request error
+	var n atomic.Int64
+
 	for {
+		if n.Load() == 2 {
+			break
+		}
+
 		select {
 		case err := <-chErr:
 			err = fmt.Errorf("error find city in db: %v", err)
 			return h.errorApiRequest(c, fiber.StatusBadRequest, err)
 		case response.Departure = <-cityDepartureCh:
-			continue
+			n.Add(1)
 		case response.Destination = <-cityDestinationCh:
-			continue
-		default:
-			// keep going until we get the data
-			if response.Departure == (models.City{}) || response.Destination == (models.City{}) {
-				continue
-			}
-
-			response.DistanceRoad, _ = h.getDistancebyRoad(
-				response.Departure.Longitude, response.Departure.Latitude,
-				response.Destination.Longitude, response.Destination.Latitude)
-
-			response.DistanceStraight = int(distance.CalcGreatCircle(
-				response.Departure.Latitude, response.Departure.Longitude,
-				response.Destination.Latitude, response.Destination.Longitude))
-
-			return c.JSON(response)
+			n.Add(1)
+		case <-time.After(timeout):
+			break
 		}
 	}
+
+	response.DistanceStraight = int(distance.CalcGreatCircle(
+		response.Departure.Latitude, response.Departure.Longitude,
+		response.Destination.Latitude, response.Destination.Longitude))
+
+	// here wait no more than 500 ms, if api OSM does not respond or responds long,
+	// then return the distance in a straight line
+	response.DistanceRoad, _ = h.getDistancebyRoad(
+		response.Departure.Longitude, response.Departure.Latitude,
+		response.Destination.Longitude, response.Destination.Latitude)
+
+	return c.JSON(response)
 }
 
 // FindObjectsNearByNameAP performs search for all objects at a distance
@@ -137,40 +146,31 @@ func (h *Hdls) FindObjectsNearByNameAPI(c *fiber.Ctx) error {
 // FindObjectsNearByCoordAPI performs search for all objects at a distance
 // until n km from coordinates passed in the query.
 func (h *Hdls) FindObjectsNearByCoordAPI(c *fiber.Ctx) error {
-	var (
-		latStr     = c.Query("lat")
-		lonStr     = c.Query("lon")
-		distanceTo = c.Query("distanceTo")
-	)
-
-	if strings.TrimSpace(distanceTo) == "" {
+	switch {
+	case strings.TrimSpace(c.Query("distanceTo")) == "":
 		err := fmt.Errorf("distanceTo %v", ErrEmptyParam)
 		return h.errorApiRequest(c, fiber.StatusBadRequest, err)
-	}
-
-	if strings.TrimSpace(latStr) == "" {
+	case strings.TrimSpace(c.Query("lat")) == "":
 		err := fmt.Errorf("lat %v", ErrEmptyParam)
 		return h.errorApiRequest(c, fiber.StatusBadRequest, err)
-	}
-
-	if strings.TrimSpace(lonStr) == "" {
+	case strings.TrimSpace(c.Query("lon")) == "":
 		err := fmt.Errorf("lon %v", ErrEmptyParam)
 		return h.errorApiRequest(c, fiber.StatusBadRequest, err)
 	}
 
-	dist, err := strconv.Atoi(distanceTo)
+	dist, err := strconv.Atoi(c.Query("distanceTo"))
 	if err != nil {
 		err = fmt.Errorf("error convert distance to int: %v", err)
 		return h.errorApiRequest(c, fiber.StatusBadRequest, err)
 	}
 
-	lat, err := strconv.ParseFloat(latStr, 64)
+	lat, err := strconv.ParseFloat(c.Query("lat"), 64)
 	if err != nil {
 		err = fmt.Errorf("error convert lat to decimal number: %v", err)
 		return h.errorApiRequest(c, fiber.StatusBadRequest, err)
 	}
 
-	lon, err := strconv.ParseFloat(lonStr, 64)
+	lon, err := strconv.ParseFloat(c.Query("lon"), 64)
 	if err != nil {
 		err = fmt.Errorf("error convert lon to decimal number: %v", err)
 		return h.errorApiRequest(c, fiber.StatusBadRequest, err)

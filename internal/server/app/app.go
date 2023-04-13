@@ -89,7 +89,7 @@ func (app *App) RegRouters() {
 	// v1
 	v1 := app.srv.Group("/v1")
 	// registration for the using application.
-	v1.Post("/register", app.hdls.SignUp)
+	v1.Post("/signup", app.hdls.SignUp)
 	// login for the using application.
 	v1.Post("/login", app.hdls.Login)
 	// logout user
