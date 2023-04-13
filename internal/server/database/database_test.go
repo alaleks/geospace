@@ -39,13 +39,13 @@ func BenchmarkFindCityConc(b *testing.B) {
 		b.Errorf(err.Error())
 	}
 
-	chErr := make(chan error, 1)
-	cityDepartureCh := make(chan models.City, 1)
-	cityDestinationCh := make(chan models.City, 1)
-
 	b.ResetTimer()
 
 	b.Run("Find City by Name (Concurrency)", func(b *testing.B) {
+		chErr := make(chan error, 1)
+		cityDepartureCh := make(chan models.City, 1)
+		cityDestinationCh := make(chan models.City, 1)
+
 		go db.FindCityConc("Rome, It", chErr, cityDepartureCh)
 		go db.FindCityConc("Venice, It", chErr, cityDestinationCh)
 
@@ -72,6 +72,10 @@ func BenchmarkFindCityConc(b *testing.B) {
 	b.ResetTimer()
 
 	b.Run("Find City by Alternative Name (Concurrency)", func(b *testing.B) {
+		chErr := make(chan error, 1)
+		cityDepartureCh := make(chan models.City, 1)
+		cityDestinationCh := make(chan models.City, 1)
+
 		go db.FindCityConc("Рим, It", chErr, cityDepartureCh)
 		go db.FindCityConc("Венеция, It", chErr, cityDestinationCh)
 
