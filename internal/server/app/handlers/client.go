@@ -36,7 +36,7 @@ func (h *Hdls) CalculateDistance(c *fiber.Ctx) error {
 		cityDestinationCh = make(chan models.City, 1)
 	)
 
-	// run concurrently findind
+	// run concurrently search in database
 	go h.db.FindCityConc(departure, chErr, cityDepartureCh)
 	go h.db.FindCityConc(destination, chErr, cityDestinationCh)
 

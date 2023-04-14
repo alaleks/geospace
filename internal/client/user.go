@@ -9,16 +9,19 @@ import (
 	"github.com/pterm/pterm"
 )
 
+// typical errors
 var (
 	ErrInvalidCommand        = errors.New("invalid command specified")
 	ErrInvalidAuthentication = errors.New("invalid authentication")
 )
 
 const (
+	// commands
 	commandLogIn  = "login"
 	commandSignUp = "signup"
-	urlSignUp     = "/v1/signup"
-	urlLogin      = "/v1/login"
+	// urls
+	urlSignUp = "/v1/signup"
+	urlLogin  = "/v1/login"
 )
 
 // authentication performs sign up or login to app.
@@ -88,7 +91,11 @@ func (c *Client) signUp() error {
 		return err
 	}
 
-	code, body, _ := c.Agent.Bytes()
+	code, body, errs := c.Agent.Bytes()
+	if len(errs) > 0 {
+		return fmt.Errorf("%v", errs)
+	}
+
 	if code != 200 {
 		return fmt.Errorf(string(body))
 	}

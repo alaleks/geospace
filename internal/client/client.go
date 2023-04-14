@@ -13,12 +13,14 @@ import (
 )
 
 const (
-	contentTypeJSON                 = "application/json"
+	contentTypeJSON = "application/json"
+	// commands
 	commandDistance                 = "distance"
 	commandCalculate                = "calculate"
 	commandCities                   = "cities"
 	commandCitiesNearbybyName       = "nearby by Name"
 	commandCitiesNearbybyCoordinate = "nearby by Coordinate"
+	commandInfo                     = "information"
 	commandBack                     = "back"
 	commandExit                     = "exit"
 )
@@ -79,7 +81,7 @@ func (c *Client) Run() {
 
 	printExitMessage()
 
-	// create commands
+	// create commands of main menu
 	commandsMainMenu := [...]string{
 		commandDistance,
 		commandCities,
@@ -92,24 +94,24 @@ func (c *Client) Run() {
 		if err != nil {
 			printErr(err)
 
-			break
+			return
 		}
 
 		switch selectedOptions {
 		case commandDistance:
 			checkExit := c.distance()
 			if checkExit {
-				break
+				return
 			}
 		case commandCities:
 			checkExit := c.cities()
 			if checkExit {
-				break
+				return
 			}
 		case commandExit:
 			pterm.Info.Println("client closed")
 
-			break
+			return
 		default:
 			printErrWithExit(ErrInvalidCommand)
 		}
@@ -151,8 +153,6 @@ func (c *Client) distance() bool {
 			return true
 		default:
 			printErr(ErrInvalidCommand)
-
-			return false
 		}
 	}
 }
@@ -165,6 +165,7 @@ func (c *Client) cities() bool {
 	commandsMenuCities := [...]string{
 		commandCitiesNearbybyName,
 		commandCitiesNearbybyCoordinate,
+		commandInfo,
 		commandBack,
 		commandExit,
 	}
@@ -189,6 +190,11 @@ func (c *Client) cities() bool {
 			if err != nil {
 				printErr(err)
 			}
+		case commandInfo:
+			err := c.getInfoCityByName()
+			if err != nil {
+				printErr(err)
+			}
 		case commandBack:
 			pterm.Info.Println("return to the main menu")
 
@@ -199,8 +205,6 @@ func (c *Client) cities() bool {
 			return true
 		default:
 			printErr(ErrInvalidCommand)
-
-			return false
 		}
 	}
 }
@@ -215,7 +219,11 @@ func (c *Client) checkServer() error {
 		return err
 	}
 
-	code, _, _ := c.Agent.Bytes()
+	code, _, errs := c.Agent.Bytes()
+	if len(errs) > 0 {
+		return fmt.Errorf("%v", errs)
+	}
+
 	if code != 200 {
 		return ErrServerInternal
 	}

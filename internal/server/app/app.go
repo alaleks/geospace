@@ -108,6 +108,7 @@ func (app *App) RegRouters() {
 	api.Get("/distance", app.hdls.CalculateDistanceAPI)
 	api.Get("/find-by-name", app.hdls.FindObjectsNearByNameAPI)
 	api.Get("/find-by-coord", app.hdls.FindObjectsNearByCoordAPI)
+	api.Get("/info", app.hdls.GetInfoCityAPI)
 }
 
 // catchSign will catch SIGINT, SIGHUP, SIGQUIT and SIGTERM and shutdown the server.

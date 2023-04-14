@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/alaleks/geospace/internal/server/app/authentication"
+	"github.com/alaleks/geospace/internal/server/chatgpt"
 	"github.com/alaleks/geospace/internal/server/database"
 	"github.com/gofiber/fiber/v2"
 )
@@ -38,17 +39,19 @@ var (
 
 // Hdls represents the handlers and includes db instance.
 type Hdls struct {
-	db    *database.DB
-	auth  *authentication.Auth
-	agent *fiber.Agent
+	agent   *fiber.Agent
+	auth    *authentication.Auth
+	chatGPT *chatgpt.ChatGPT
+	db      *database.DB
 }
 
 // New creates a new pointer Hdls instance.
 func New(db *database.DB, auth *authentication.Auth) *Hdls {
 	return &Hdls{
-		db:    db,
-		auth:  auth,
-		agent: fiber.AcquireAgent(),
+		db:      db,
+		auth:    auth,
+		agent:   fiber.AcquireAgent(),
+		chatGPT: chatgpt.New(),
 	}
 }
 
