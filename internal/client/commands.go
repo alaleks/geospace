@@ -1,6 +1,7 @@
 package client
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
@@ -13,6 +14,7 @@ const (
 	urlDistance             = "/v1/user/distance"
 	urlFindByName           = "/v1/user/find-by-name"
 	urlFindByCoord          = "/v1/user/find-by-coord"
+	urlGetInfo              = "/v1/api/info"
 )
 
 // calcDistance provides capability of calculate distance between two cities.
@@ -128,6 +130,48 @@ func (c *Client) getNearbyCitiesbyCoord() error {
 	}
 
 	pterm.DefaultHeader.WithFullWidth().Println(string(body))
+
+	return nil
+}
+
+// getInfoCityByName provides capability of get information about city as a short text.
+func (c *Client) getInfoCityByName() error {
+	name, err := inputWithResult("City name*")
+	if err != nil {
+		return err
+	}
+
+	req := c.Agent.Request()
+	req.Header.SetMethod(fiber.MethodGet)
+	req.Header.Add(authenticationHeaderKey, prefixToken+c.Token)
+	req.SetRequestURI(c.Host + urlGetInfo)
+	req.URI().QueryArgs().Add("name", name)
+
+	pterm.Info.Println("please wait")
+
+	if err := c.Agent.Parse(); err != nil {
+		return err
+	}
+
+	code, body, errs := c.Agent.Bytes()
+	if len(errs) > 0 {
+		return fmt.Errorf("%v", errs)
+	}
+
+	if code != 200 {
+		return fmt.Errorf(string(body))
+	}
+
+	var response struct {
+		Text string `json:"text"`
+	}
+
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return err
+	}
+
+	pterm.DefaultHeader.WithFullWidth().Println(response.Text)
 
 	return nil
 }

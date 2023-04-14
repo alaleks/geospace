@@ -10,6 +10,7 @@ require (
 	github.com/golang-module/dongle v0.2.8
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/pterm/pterm v0.12.58
+	github.com/sashabaranov/go-openai v1.7.0
 	go.uber.org/zap v1.24.0
 	gopkg.in/yaml.v2 v2.4.0
 )

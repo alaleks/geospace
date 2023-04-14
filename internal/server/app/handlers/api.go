@@ -203,6 +203,35 @@ func (h *Hdls) FindObjectsNearByCoordAPI(c *fiber.Ctx) error {
 	return c.JSON(response)
 }
 
+// GetInfoCityAPI perfoms getting information about city by name
+// using language model chatGPT.
+func (h *Hdls) GetInfoCityAPI(c *fiber.Ctx) error {
+	name := strings.TrimSpace(c.Query("name"))
+
+	if name == "" {
+		err := fmt.Errorf("name %v", ErrEmptyParam)
+		return h.errorApiRequest(c, fiber.StatusBadRequest, err)
+	}
+
+	city, err := h.db.FindCity(name)
+	if err != nil {
+		return h.errorApiRequest(c, fiber.StatusBadRequest, err)
+	}
+
+	result, err := h.chatGPT.Use(city.Name)
+	if err != nil {
+		return h.errorApiRequest(c, fiber.StatusBadRequest, err)
+	}
+
+	var response = struct {
+		Text string `json:"text"`
+	}{
+		Text: result,
+	}
+
+	return c.JSON(response)
+}
+
 // errorApiRequest performs send status code and message error.
 func (h *Hdls) errorApiRequest(c *fiber.Ctx, code int, err error) error {
 	errReq := struct {
