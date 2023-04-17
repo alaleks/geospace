@@ -187,9 +187,11 @@ func (db *DB) FindObjectsNearByName(departure string, distance int) (models.City
 	err = db.SQLX.Select(&cities, `SELECT cid, name, country, 
 		latitude, longitude FROM cities HAVING 
 		ABS(CAST((latitude * ? - ?) AS INT)) <= ? AND 
-		ABS(CAST((longitude * ? - ?) AS INT)) <= ?`,
+		ABS(CAST((longitude * ? - ?) AS INT)) <= ? AND
+		cid <> ?`,
 		converFact, latUint, uint(degreeLat*converFact),
-		converFact, lonUint, uint(degreeLon*converFact))
+		converFact, lonUint, uint(degreeLon*converFact),
+		city.ID)
 	if err != nil {
 		return city, nil, err
 	}

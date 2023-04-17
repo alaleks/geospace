@@ -120,7 +120,7 @@ func (h *Hdls) FindObjectsNearByName(c *fiber.Ctx) error {
 	response := fmt.Sprintf("There are %d cities at a distance %d km from %s, %s\n",
 		len(respCities), dist, ciyDeparture.Name, ciyDeparture.Country)
 
-	response += fmt.Sprintf("List:\n %s", strings.Join(respCities, ", "))
+	response += fmt.Sprintf("List:\n %s", strings.Join(respCities, "\n"))
 
 	return c.SendString(response)
 }
@@ -173,7 +173,7 @@ func (h *Hdls) FindObjectsNearByCoord(c *fiber.Ctx) error {
 	response := fmt.Sprintf("There are %d cities at a distance %d km\n", len(respCities), dist)
 
 	if len(respCities) > 0 {
-		response += fmt.Sprintf("List:\n%s", strings.Join(respCities, ","))
+		response += fmt.Sprintf("List:\n%s", strings.Join(respCities, "\n"))
 	}
 
 	return c.SendString(response)
