@@ -1,13 +1,14 @@
 package app
 
 import (
+	"archive/zip"
 	"encoding/json"
-	"os"
+	"io"
 	"strings"
 	"time"
 
 	"github.com/alaleks/geospace/internal/server/config"
-	"github.com/gen2brain/go-unarr"
+	"github.com/alaleks/geospace/internal/server/database/models"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -15,6 +16,7 @@ const (
 	samplePath   = "/sample/"    // folder containing the sample file for import
 	arhiveName   = "cities.zip"  // name archive of cities
 	jsonFilename = "cities.json" // file name containing cities
+	numCities    = 140_868
 )
 
 // CityRaw represents a struct for data from json.
@@ -43,47 +45,66 @@ func importCities(db *sqlx.DB) error {
 		return err
 	}
 
-	a, err := unarr.NewArchive(rootDir + samplePath + arhiveName)
+	// open zip file
+	archiveCities, err := zip.OpenReader(rootDir + samplePath + arhiveName)
 	if err != nil {
 		return err
 	}
 
-	defer a.Close()
+	defer archiveCities.Close()
 
-	// extract data from archive
-	_, err = a.Extract(rootDir + samplePath)
+	var fileCities []byte
+
+	// read files in zip archive
+	for _, f := range archiveCities.File {
+		v, err := f.Open()
+		if err != nil {
+			return err
+		}
+
+		defer v.Close()
+
+		b, err := io.ReadAll(v)
+		if err != nil {
+			return err
+		}
+
+		fileCities = b
+
+		break // import file is one
+	}
+
+	citiesRaw := make([]CityRaw, 0, numCities)
+
+	err = json.Unmarshal(fileCities, &citiesRaw)
 	if err != nil {
 		return err
 	}
 
-	file, err := os.Open(rootDir + samplePath + jsonFilename)
-	if err != nil {
-		return err
-	}
+	cities := make([]models.City, 0, numCities)
 
-	var cities []CityRaw
-
-	err = json.NewDecoder(file).Decode(&cities)
-	if err != nil {
-		return err
+	for _, city := range citiesRaw {
+		cities = append(cities, models.City{
+			Name:             city.Name,
+			NameASCII:        city.NameASCII,
+			AlternativeNames: strings.Join(city.AlternativeNames, ","),
+			CountryCode:      city.CountryCode,
+			Country:          city.CountryName,
+			Timezone:         city.Timezone,
+			Latitude:         city.Coordinates.Lat,
+			Longitude:        city.Coordinates.Lon,
+			CreatedAt:        time.Now().Unix(),
+		})
 	}
 
 	// import data to cities table
-	tx := db.MustBegin()
-	for _, v := range cities {
-		tx.MustExec(tx.Rebind(`INSERT INTO cities (name, name_ascii, 
-			alternative_names, country_code, country, 
-			timezone, latitude, longitude, created_at) 
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`), v.Name, v.NameASCII, strings.Join(v.AlternativeNames, ","),
-			v.CountryCode, v.CountryName, v.Timezone, v.Coordinates.Lat, v.Coordinates.Lon, time.Now().Unix())
-	}
-	err = tx.Commit()
-	if err != nil {
+	if _, err = db.NamedExec(`INSERT INTO cities (name, name_ascii, 
+		alternative_names, country_code, country, 
+		timezone, latitude, longitude, created_at) 
+        VALUES (:name, :name_ascii, :alternative_names, :country_code, :country,
+			 :country_code, :timezone, :latitude, :longitude, :created_at)`, cities); err != nil {
 		return err
 	}
-
-	// remove json file
-	os.Remove(rootDir + samplePath + jsonFilename)
 
 	return nil
 }
